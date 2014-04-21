@@ -1,0 +1,25 @@
+#!/bin/bash
+
+xrandr | grep 1360
+
+if [ $? -eq 0 ]
+then
+    xrandr --output LVDS1 --mode 1024x600 --panning 1024x600 --scale 1.0x1.0
+else
+    xrandr --output LVDS1 --mode 1024x600 --panning  1360x768 --scale 1.328x1.28
+fi
+
+#Replace the second xrandr with any of the following to change the emulated screen size. Also replace the grep with the first set of numbers after --panning
+
+#1080p
+#xrandr --output LVDS1 --mode 1024x600 --panning  1920x1080 --scale 1.875x1.8
+
+#900p
+#xrandr --output LVDS1 --mode 1024x600 --panning  1600x900 --scale 1.563x1.49999
+
+#768p
+#xrandr --output LVDS1 --mode 1024x600 --panning  1360x768 --scale 1.328x1.28
+
+#720p
+#xrandr --output LVDS1 --mode 1024x600 --panning 1280x720 --scale 1.25x1.2
+
