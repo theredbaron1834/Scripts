@@ -1,0 +1,2 @@
+#!/bin/sh
+sudo pacman -Rcns $(pacman -Qdtq)
