@@ -1,0 +1,30 @@
+#!/bin/bash
+
+if cat /etc/cgconfig.conf | grep "group limited {"
+        then
+                echo "Group already there"
+        else
+                sudo echo "group limited {
+  memory {
+    memory.limit_in_bytes = 400M;
+  }
+}" | sudo tee -a /etc/cgconfig.conf #This adds the group limited to cgroup. If you want different memory limits, either change 400M before first run, or run sudo $EDITOR /etc/cgconfig.conf and edit the file to read whatever you need.
+
+                sudo systemctl restart cgconfig
+        fi
+
+
+
+sudo chown -R $USER /sys/fs/cgroup/memory/limited  #Allows your user to run apps with the cgroup settings.
+
+
+
+program=$(zenity --entry --title="cGroup Memory Limiter" --text "What is the name of the program you want to run limited?" --entry-text firefox) #Grab the program name.
+
+if which $program
+        then
+                cgexec -g memory:limited $(which $program) #The command to run said program with the limited memory.
+        else
+                zenity --error --text="Can not find that program, please check your speeling"
+
+fi
