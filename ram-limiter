@@ -9,12 +9,10 @@ if cat /etc/cgconfig.conf | grep "group limited {"
     memory.limit_in_bytes = 400M;
   }
 }" | sudo tee -a /etc/cgconfig.conf #This adds the group limited to cgroup. If you want different memory limits, either change 400M before first run, or run sudo $EDITOR /etc/cgconfig.conf and edit the file to read whatever you need.
-
-                sudo systemctl restart cgconfig
         fi
 
 
-
+sudo systemctl restart cgconfig
 sudo chown -R $USER /sys/fs/cgroup/memory/limited  #Allows your user to run apps with the cgroup settings.
 
 
