@@ -1,3 +1,3 @@
 #!/bin/sh
-#This removes all leftover files, similar to apt-get autoremove.
+#This removes all leftover files, similar to apt-get autoremove. It is only here because I always forget the command, so I scripted it.
 sudo pacman -Rcns $(pacman -Qdtq)
