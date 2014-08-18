@@ -1,0 +1,24 @@
+#!/bin/sh
+
+#This only works for the first 2 different versions, as I am not exactly skilled at scripting :)
+
+
+one=$(archlinux-java status | tail -n +2 | sed "s/(default)//g" | head -n -1 | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')
+two=$(archlinux-java status | tail -n +2 | sed "s/(default)//g" | tail -n +2 | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')
+current=$(archlinux-java get)
+# These grab the first 2 java version's, as well as which one is current
+
+if [ "$current" == "$one" ] 
+	
+	then
+		sudo archlinux-java set $two
+		echo "Current = $two"
+		#notify-send "$two" #If you want notifications, such as if you use a .desktop file to lauch, you can uncomment this
+	
+	else
+
+		sudo archlinux-java set $one
+		echo "Current = $one"
+		#notify-send "$one" #If you want notifications, such as if you use a .desktop file to lauch, you can uncomment this
+
+fi
