@@ -1,25 +1,42 @@
-#!/bin/bash
+#!/bin/ba
+output=$(xrandr | grep primary | sed -e 's/\s\+/\n/g' | head -n 1)
+size=25
+x=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | head -n 1)
+y=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | tail -n 1)
+current=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1)
 
-xrandr | grep 1360
+optstr=hs:  ## colon follows options that require an argument
 
-if [ $? -eq 0 ]
-then
-    xrandr --output LVDS1 --mode 1024x600 --panning 1024x600 --scale 1.0x1.0
-else
-    xrandr --output LVDS1 --mode 1024x600 --panning  1360x768 --scale 1.328x1.28
-fi
+while getopts $optstr var
+do
+  case $var in
+    s) size=$OPTARG ;;
+    h) echo "This is a simple script to give you a boosted virtual resolution +25% by default							. IE, the max resolution for many netbook is 1024x600. With this you can "trick" it to being 1280x750 by boosting it 25%. This can make it to blurry for some, but it helps you run apps that need a higher resolution. For 1024x600, I find the sweet spot to be 35%, but everybody has different taste/eyes. It is not recommended, but you can go as high as you want. Want 20000x20000, go for it. Don't expect to see much, but still. Go for it :).
+    
+-h this help
+-s The size to increase by in %, without the % (example -s 25). Default is 25"; exit ;;
+  esac
+done
+shift $(( $OPTIND - 1 )) 
 
-#Replace the second xrandr with any of the following to change the emulated screen size. Also replace the grep with the first set of numbers after --panning
+newx=$(($x*$size))
+newx=$(echo $newx | sed 's/.\{2\}$//')
+newx=$(($newx + $x))
 
-#1080p
-#xrandr --output LVDS1 --mode 1024x600 --panning  1920x1080 --scale 1.875x1.8
+newy=$(($y*$size))
+newy=$(echo $newy | sed 's/.\{2\}$//')
+newy=$(($newy + $y))
 
-#900p
-#xrandr --output LVDS1 --mode 1024x600 --panning  1600x900 --scale 1.563x1.49999
+scale=$(awk 'BEGIN{print '$newx' / '$x'}')
 
-#768p
-#xrandr --output LVDS1 --mode 1024x600 --panning  1360x768 --scale 1.328x1.28
 
-#720p
-#xrandr --output LVDS1 --mode 1024x600 --panning 1280x720 --scale 1.25x1.2
+echo "Current Resolution	- $current"
+echo "Scale			- $scale"
+echo "New  Resolution		- "$newx"x"$newy""
+
+echo "xrand command is	- xrandr --output $output --mode $current --panning "$newx"x"$newy" --scale "$scale"x"$scale""
+
+
+xrandr --output $output --mode $current --panning "$newx"x"$newy" --scale "$scale"x"$scale"
+
 
