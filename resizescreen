@@ -11,7 +11,7 @@ while getopts $optstr var
 do
   case $var in
     s) size=$OPTARG ;;
-    h) echo "This is a simple script to give you a boosted virtual resolution +25% by default							. IE, the max resolution for many netbook is 1024x600. With this you can "trick" it to being 1280x750 by boosting it 25%. This can make it to blurry for some, but it helps you run apps that need a higher resolution. For 1024x600, I find the sweet spot to be 35%, but everybody has different taste/eyes. It is not recommended, but you can go as high as you want. Want 20000x20000, go for it. Don't expect to see much, but still. Go for it :).
+    h) echo "This is a simple script to give you a boosted virtual resolution +25% by default. IE, the max resolution for many netbook is 1024x600. With this you can "trick" it to being 1280x750 by boosting it 25%. This can make it to blurry for some, but it helps you run apps that need a higher resolution. For 1024x600, I find the sweet spot to be 35%, but everybody has different taste/eyes. It is not recommended, but you can go as high as you want. Want 20000x20000, go for it. Don't expect to see much, but still. Go for it :).
     
 -h this help
 -s The size to increase by in %, without the % (example -s 25). Default is 25"; exit ;;
