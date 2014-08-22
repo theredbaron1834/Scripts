@@ -1,4 +1,4 @@
-#!/bin/ba
+#!/bin/bash
 output=$(xrandr | grep primary | sed -e 's/\s\+/\n/g' | head -n 1)
 size=25
 x=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | head -n 1)
