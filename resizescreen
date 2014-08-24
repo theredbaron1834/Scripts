@@ -1,11 +1,21 @@
 #!/bin/bash
-output=$(xrandr | grep primary | sed -e 's/\s\+/\n/g' | head -n 1)
-size=25
-x=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | head -n 1)
-y=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | tail -n 1)
-current=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1)
+#Grab the current used screen
+output=$(xrandr | grep primary | sed -e 's/\s\+/\n/g' | head -n 1) 
+# Set the default screensize
+size=25 
+# Grabing the current X res
+x=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | head -n 1) 
+# Grabing the current y res
+y=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | tail -n 1) 
+# Grabbing the max actual screen res
+real=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1) 
+# This grabs the current screensize, be it the actual size or virtual
+current=$(xrandr | grep Screen | sed -e 's/\,/\n/g' | grep current | sed -e 's/ x /x/g' | sed -e 's/\s\+/\n/g' | sed '/^$/d' | grep -v current) 
 
-optstr=hs:  ## colon follows options that require an argument
+
+
+# Grab the command options
+optstr=hs:   
 
 while getopts $optstr var
 do
@@ -19,6 +29,8 @@ do
 done
 shift $(( $OPTIND - 1 )) 
 
+
+# These next few lines are the crap I have to do to get the new sceen size, as I am not all that good at scripting :)
 newx=$(($x*$size))
 newx=$(echo $newx | sed 's/.\{2\}$//')
 newx=$(($newx + $x))
@@ -30,13 +42,12 @@ newy=$(($newy + $y))
 scale=$(awk 'BEGIN{print '$newx' / '$x'}')
 
 
+# This provides some feedback
+echo "Real Resolution	- $real"
 echo "Current Resolution	- $current"
-echo "Scale			- $scale"
 echo "New  Resolution		- "$newx"x"$newy""
+echo "Scale			- $scale"
+echo "xrand command is	- xrandr --output $output --mode $real --panning "$newx"x"$newy" --scale "$scale"x"$scale""
 
-echo "xrand command is	- xrandr --output $output --mode $current --panning "$newx"x"$newy" --scale "$scale"x"$scale""
-
-
-xrandr --output $output --mode $current --panning "$newx"x"$newy" --scale "$scale"x"$scale"
-
-
+# The actual command that boosts your screen size
+xrandr --output $output --mode $real --panning "$newx"x"$newy" --scale "$scale"x"$scale"
