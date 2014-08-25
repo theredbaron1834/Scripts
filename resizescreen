@@ -1,53 +1,252 @@
-#!/bin/bash
-#Grab the current used screen
-output=$(xrandr | grep primary | sed -e 's/\s\+/\n/g' | head -n 1) 
-# Set the default screensize
-size=25 
-# Grabing the current X res
-x=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | head -n 1) 
-# Grabing the current y res
-y=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | tail -n 1) 
-# Grabbing the max actual screen res
-real=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1) 
-# This grabs the current screensize, be it the actual size or virtual
-current=$(xrandr | grep Screen | sed -e 's/\,/\n/g' | grep current | sed -e 's/ x /x/g' | sed -e 's/\s\+/\n/g' | sed '/^$/d' | grep -v current) 
+#!/usr/bin/env bash
 
+## script info
+# name: resizescreen.sh
+# author: theredbaron1834
+# purpose: a simple script to give you a boosted virtual resolution
+# last updated: august 2014
+# dependencies:
+# - bash v4
+# - xrandr
+# - findutils
+# optional dependencies:
+# - one of the following:
+#   - dc
+#   - busybox dc
+#   - awk
+#   - busybox awk
 
+## declare vars
+shopt -os nounset
+declare    awk_one_liner='' # se
+declare    dependency=''    # se
+declare    dsp_name=''      # display name, must be string, letters + numbers
+declare -i dsp_max_w=0      # display max width
+declare -i dsp_max_h=0      # display max height
+declare    boost=''         # se
+declare -i boost_int=0      # se
+declare    old_boost=''     # must be string, bash can't handle decimal numbers
+declare -i old_boost_int=0  # se
+declare    regex=''         # se
+declare    scale=''         # must be string, bash can't handle decimal numbers
+declare -i scr_cur_w=0      # screen current width
+declare -i scr_cur_h=0      # screen current height
+declare -i scr_new_w=0      # screen new width
+declare -i scr_new_h=0      # screen new height
+declare -a xrandr_info=()   # se
 
-# Grab the command options
-optstr=hs:   
+## define functions
+# die() is called if we have a fatal error, eg
+#   some_important_command || die 'command failed' $LINENO 1
+#
+# three args:
+# - $1, error message, string
+# - $2, $LINENO, integer
+# - $3, exit code, integer
+# 
+# no return value
+die() {
+  if
+    (( $# == 3 ))
+  then
+    echo "$BASH_SOURCE: line $2: ERROR, $1" > /dev/stderr
+    exit $3
+  else
+    echo "$BASH_SOURCE: unspecified error." > /dev/stderr
+    exit 999
+  fi
+}
 
-while getopts $optstr var
+# usage() prints script usage info,
+# then exits cleanly
+#
+# no args
+#
+# no return value
+usage() {
+  cat <<END_USAGE
+Usage:
+  $BASH_SOURCE --boost [-]xx[%]
+  $BASH_SOURCE --reset
+
+Options:
+  -b     --boost    How much to boost screen size by, percentage value.
+
+                    For example, '--boost 25%' would allow you to see 25% more
+                    of the windows you have open. If that makes text too small
+                    to read, '--boost -5%' would adjust it down to 20%.
+
+                    Recommended range is 25% to 50%. Computers with a
+                    small screen (eg netbooks) should use a value closer
+                    to 25%, computers with a large screen but small display 
+                    (eg old laptops with a 1024x768 display) should use
+                    a value closer to 50%.
+  -h     --help     Display this help.
+  -r     --reset    Reset screen size to display resolution.
+END_USAGE
+  exit 0
+}
+
+# reset() resets screen size to display resolution,
+# then exits cleanly
+#
+# no args
+#
+# no return value
+reset() {
+  xrandr --output $dsp_name \
+         --mode ${dsp_max_w}x${dsp_max_h} \
+         --panning 0x0 \
+         --scale 1x1
+  exit 0
+}
+
+# get_answer() gets the user to give the answer to an equation,
+# if dc and awk aren't installed
+#
+# 1 arg:
+# - $1, equation to calculate, string
+#
+# returns a string
+get_answer() {
+  local equation="$1"
+  local answer=''
+  
+  read -p "Please manually calculate ${equation}: " answer
+  echo $answer
+}
+
+## assign vars
+# check dependencies
+for dependency in xargs xrandr
 do
-  case $var in
-    s) size=$OPTARG ;;
-    h) echo "This is a simple script to give you a boosted virtual resolution +25% by default. IE, the max resolution for many netbook is 1024x600. With this you can "trick" it to being 1280x750 by boosting it 25%. This can make it to blurry for some, but it helps you run apps that need a higher resolution. For 1024x600, I find the sweet spot to be 35%, but everybody has different taste/eyes. It is not recommended, but you can go as high as you want. Want 20000x20000, go for it. Don't expect to see much, but still. Go for it :).
-    
--h this help
--s The size to increase by in %, without the % (example -s 25). Default is 25"; exit ;;
+  command -v $dependency >/dev/null || \
+    die "missing dependency: '$dependency'." $LINENO 1
+done
+
+# read xrandr output into array $xrandr_info
+# quotes are necessary
+readarray -t xrandr_info <<< "$(xrandr)"
+
+regex="^Screen 0: minimum [0-9]+ x [0-9]+, current ([0-9]+) x ([0-9]+)"
+if
+  [[ ${xrandr_info[0]} =~ $regex ]]
+then
+  scr_cur_w=${BASH_REMATCH[1]}
+  scr_cur_h=${BASH_REMATCH[2]}
+else
+  die "couldn't match regex." $LINENO 2
+fi
+
+regex="^([A-Z0-9]+) connected primary"
+if
+  [[ ${xrandr_info[1]} =~ $regex ]] || \
+  [[ ${xrandr_info[2]} =~ $regex ]]
+then
+  dsp_name=${BASH_REMATCH[1]}
+else
+  die "couldn't match regex." $LINENO 2
+fi
+
+# see xrandr | od -t a for number of spaces to match
+# + (at end of regex) indicates max res
+regex="^ {3}([0-9]+)x([0-9]+) {7}[0-9]{2}\.[0-9].\+"
+if
+  [[ ${xrandr_info[2]} =~ $regex ]] || \
+  [[ ${xrandr_info[3]} =~ $regex ]]
+then
+  dsp_max_w=${BASH_REMATCH[1]}
+  dsp_max_h=${BASH_REMATCH[2]}
+else
+  die "couldn't match regex." $LINENO 2
+fi
+
+## process options
+while
+  (( $# >= 1 ))
+do
+  # use case rather than if/elif/else,
+  # in future we may add more than 3 options to script
+  case $1 in
+    '-h' |  '--help') usage;;
+    '-b' | '--boost') boost=$2; shift 2;;
+    '-r' | '--reset') reset;;
+                   *) echo "WARNING, option '$1' not recognised."; shift 1;;
   esac
 done
-shift $(( $OPTIND - 1 )) 
 
+## body of script
+if
+  [[ ${boost:-unset} = unset ]]
+then
+  echo "WARNING, you forgot the '--boost' option, defaulting to '--boost 35%'."
+  boost_int=35
+# FIXME: test if ${boost%\%} is a number,
+# otherwise printf fails, $boost_int=0 and later calculations are wrong
+else
+  # strip percent char (%) and round to nearest integer
+  # $boost may already be an integer,
+  # but one superfluous call to printf doesn't matter
+  boost_int=$(printf '%.0f' ${boost%\%})
+fi
 
-# These next few lines are the crap I have to do to get the new sceen size, as I am not all that good at scripting :)
-newx=$(($x*$size))
-newx=$(echo $newx | sed 's/.\{2\}$//')
-newx=$(($newx + $x))
+# sanity checking
+if
+  (( $boost_int < 0 ))
+then
+  awk_one_liner="BEGIN{ print (($scr_cur_w / $dsp_max_w) * 100) - 100; }"
+  old_boost=$(
+    dc         <<< "5 k $scr_cur_w $dsp_max_w / 100 * 100 - p" 2>/dev/null || \
+    busybox dc <<< "$scr_cur_w $dsp_max_w / 100 * 100 - p"     2>/dev/null || \
+    awk         -- "$awk_one_liner"                            2>/dev/null || \
+    busybox awk -- "$awk_one_liner"                            2>/dev/null || \
+    get_answer "(($scr_cur_w / $dsp_max_w) * 100) - 100"
+  )
+  # round to nearest integer
+  old_boost_int=$(printf '%.0f' $old_boost)
+  boost_int=$(( $old_boost_int + $boost_int ))
+  if
+    (( $boost_int < 25 )) || \
+    (( $boost_int > 50 ))
+  then
+    echo "WARNING, adjusted value \'--boost ${boost_int}%\' is outside the \
+          recommended range (25 to 50%)." | xargs
+  fi
+elif
+  (( $boost_int < 25 )) || \
+  (( $boost_int > 50 ))
+then
+  echo "WARNING, '--boost $boost' is outside the recommended range (25 to 50%)."
+fi
 
-newy=$(($y*$size))
-newy=$(echo $newy | sed 's/.\{2\}$//')
-newy=$(($newy + $y))
+scr_new_w=$(( ($dsp_max_w * ($boost_int + 100)) / 100 ))
+scr_new_h=$(( ($dsp_max_h * ($boost_int + 100)) / 100 ))
+awk_one_liner="BEGIN{ print $scr_new_w / $dsp_max_w; }"
+scale=$(
+  dc         <<< "5 k $scr_new_w $dsp_max_w / p" 2>/dev/null || \
+  busybox dc <<< "$scr_new_w $dsp_max_w / p"     2>/dev/null || \
+  awk         -- "$awk_one_liner"                2>/dev/null || \
+  busybox awk -- "$awk_one_liner"                2>/dev/null || \
+  get_answer "$scr_new_w / $dsp_max_w"
+)
 
-scale=$(awk 'BEGIN{print '$newx' / '$x'}')
+# feedback to user
+echo "Display resolution....: ${dsp_max_w}x${dsp_max_h}"
+echo "Current screen size...: ${scr_cur_w}x${scr_cur_h}"
+echo "New screen size.......: ${scr_new_w}x${scr_new_h}"
+echo "Scale.................: $scale"
+echo "Command to run........: xrandr --output $dsp_name \
+                                     --mode ${dsp_max_w}x${dsp_max_h} \
+                                     --panning ${scr_new_w}x${scr_new_h} \
+                                     --scale ${scale}x${scale}" | xargs
 
+# good idea to give user a chance to abort
+echo "WARNING, running command in 5 seconds, press 'Ctrl-C' to abort."
+sleep 5
+xrandr --output $dsp_name \
+       --mode ${dsp_max_w}x${dsp_max_h} \
+       --panning ${scr_new_w}x${scr_new_h} \
+       --scale ${scale}x${scale}
 
-# This provides some feedback
-echo "Real Resolution	- $real"
-echo "Current Resolution	- $current"
-echo "New  Resolution		- "$newx"x"$newy""
-echo "Scale			- $scale"
-echo "xrand command is	- xrandr --output $output --mode $real --panning "$newx"x"$newy" --scale "$scale"x"$scale""
-
-# The actual command that boosts your screen size
-xrandr --output $output --mode $real --panning "$newx"x"$newy" --scale "$scale"x"$scale"
+# exit cleanly
+exit 0
