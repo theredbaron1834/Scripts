@@ -190,10 +190,6 @@ fi
 
 # sanity checking
 if
-  (( $boost_int > 50 ))
-then
-  echo "WARNING, '--boost $boost' is outside the recommended range (25 to 50%)."
-elif
   (( $boost_int < 0 ))
 then
   awk_one_liner="BEGIN{ print (($scr_cur_w / $dsp_max_w) * 100) - 100; }"
@@ -207,6 +203,17 @@ then
   # round to nearest integer
   old_boost_int=$(printf '%.0f' $old_boost)
   boost_int=$(( $old_boost_int + $boost_int ))
+  if
+    (( $boost_int < 25 ))
+  then
+    echo "WARNING, adjusted value '--boost $boost' is outside the recommended \
+          range (25 to 50%)." | xargs
+  fi
+elif
+  (( $boost_int < 25 )) || \
+  (( $boost_int > 50 ))
+then
+  echo "WARNING, '--boost $boost' is outside the recommended range (25 to 50%)."
 fi
 
 scr_new_w=$(( ($dsp_max_w * ($boost_int + 100)) / 100 ))
@@ -225,8 +232,6 @@ echo "Display resolution....: ${dsp_max_w}x${dsp_max_h}"
 echo "Current screen size...: ${scr_cur_w}x${scr_cur_h}"
 echo "New screen size.......: ${scr_new_w}x${scr_new_h}"
 echo "Scale.................: $scale"
-# pipe to xargs to collapse whitespace
-# best way of doing this without complicated print() function
 echo "Command to run........: xrandr --output $dsp_name \
                                      --mode ${dsp_max_w}x${dsp_max_h} \
                                      --panning ${scr_new_w}x${scr_new_h} \
