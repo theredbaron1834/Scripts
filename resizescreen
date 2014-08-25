@@ -8,7 +8,6 @@
 # dependencies:
 # - bash v4
 # - xrandr
-# - which
 # - findutils
 # optional dependencies:
 # - one of the following:
@@ -124,7 +123,7 @@ get_answer() {
 
 ## assign vars
 # check dependencies
-for dependency in which xargs xrandr
+for dependency in xargs xrandr
 do
   command -v $dependency >/dev/null || \
     die "missing dependency: '$dependency'." $LINENO 1
