@@ -204,10 +204,11 @@ then
   old_boost_int=$(printf '%.0f' $old_boost)
   boost_int=$(( $old_boost_int + $boost_int ))
   if
-    (( $boost_int < 25 ))
+    (( $boost_int < 25 )) || \
+    (( $boost_int > 50 ))
   then
-    echo "WARNING, adjusted value '--boost $boost' is outside the recommended \
-          range (25 to 50%)." | xargs
+    echo "WARNING, adjusted value '--boost ${boost_int}%' is outside the \
+          recommended range (25 to 50%)." | xargs
   fi
 elif
   (( $boost_int < 25 )) || \
