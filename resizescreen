@@ -181,6 +181,8 @@ if
 then
   echo "WARNING, you forgot the '--boost' option, defaulting to '--boost 35%'."
   boost_int=35
+# FIXME: test if ${boost%\%} is a number,
+# otherwise printf fails, $boost_int=0 and later calculations are wrong
 else
   # strip percent char (%) and round to nearest integer
   # $boost may already be an integer,
@@ -207,7 +209,7 @@ then
     (( $boost_int < 25 )) || \
     (( $boost_int > 50 ))
   then
-    echo "WARNING, adjusted value '--boost ${boost_int}%' is outside the \
+    echo "WARNING, adjusted value \'--boost ${boost_int}%\' is outside the \
           recommended range (25 to 50%)." | xargs
   fi
 elif
