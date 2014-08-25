@@ -176,13 +176,17 @@ do
 done
 
 ## body of script
+# process user input $boost -> $boost_int
 if
   [[ ${boost:-unset} = unset ]]
 then
   echo "WARNING, you forgot the '--boost' option, defaulting to '--boost 35%'."
   boost_int=35
-# FIXME: test if ${boost%\%} is a number,
-# otherwise printf fails, $boost_int=0 and later calculations are wrong
+elif
+  [[ $boost != [0-9]* ]]
+then
+  echo "WARNING, '--boost $boost' is not a number, defaulting to '--boost 35%'."
+  boost_int=35
 else
   # strip percent char (%) and round to nearest integer
   # $boost may already be an integer,
@@ -190,7 +194,7 @@ else
   boost_int=$(printf '%.0f' ${boost%\%})
 fi
 
-# sanity checking
+# check $boost_int is a sane value
 if
   (( $boost_int < 0 ))
 then
