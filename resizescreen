@@ -29,15 +29,11 @@ do
 done
 shift $(( $OPTIND - 1 )) 
 
+# Thanks to /u/Schmeidenbacher on Reddit for this. Grabs the new boosted screen size
 
-# These next few lines are the crap I have to do to get the new sceen size, as I am not all that good at scripting :)
-newx=$(($x*$size))
-newx=$(echo $newx | sed 's/.\{2\}$//')
-newx=$(($newx + $x))
+newx=$(( $x * ( 100 +  $size )  / 100  ))
+newy=$(( $y * ( 100 +  $size )  / 100  ))
 
-newy=$(($y*$size))
-newy=$(echo $newy | sed 's/.\{2\}$//')
-newy=$(($newy + $y))
 
 scale=$(awk 'BEGIN{print '$newx' / '$x'}')
 
@@ -48,6 +44,8 @@ echo "Current Resolution	- $current"
 echo "New  Resolution		- "$newx"x"$newy""
 echo "Scale			- $scale"
 echo "xrand command is	- xrandr --output $output --mode $real --panning "$newx"x"$newy" --scale "$scale"x"$scale""
+
+read -p "Press any key to continue." -s
 
 # The actual command that boosts your screen size
 xrandr --output $output --mode $real --panning "$newx"x"$newy" --scale "$scale"x"$scale"
