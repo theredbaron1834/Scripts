@@ -46,19 +46,15 @@ declare -a xrandr_info=()   # se
 # 
 # no return value
 die() {
-  local -i exit_code=0
-
   if
     (( $# == 3 ))
   then
     echo "$BASH_SOURCE: line $2: ERROR, $1" > /dev/stderr
-    exit_code=$3
+    exit $3
   else
     echo "$BASH_SOURCE: unspecified error." > /dev/stderr
-    exit_code=999
+    exit 999
   fi
-
-  exit $exit_code
 }
 
 # usage() prints script usage info,
@@ -70,11 +66,10 @@ die() {
 usage() {
   cat <<END_USAGE
 Usage:
-  $BASH_SOURCE --boost xx[%]
+  $BASH_SOURCE --boost [-]xx[%]
   $BASH_SOURCE --reset
 
 Options:
-  -h     --help     Display this help.
   -b     --boost    How much to boost screen size by, percentage value.
 
                     For example, '--boost 25%' would allow you to see 25% more
@@ -86,7 +81,7 @@ Options:
                     to 25%, computers with a large screen but small display 
                     (eg old laptops with a 1024x768 display) should use
                     a value closer to 50%.
-
+  -h     --help     Display this help.
   -r     --reset    Reset screen size to display resolution.
 END_USAGE
   exit 0
