@@ -18,24 +18,25 @@
 
 ## declare vars
 shopt -os nounset
-declare    awk_one_liner=''  # se
-declare    dependency=''     # se
-declare    dsp_name=''       # display name, must be string, letters + numbers
-declare -i dsp_max_w=0       # display max width
-declare -i dsp_max_h=0       # display max height
-declare    boost=''          # se
-declare -i boost_int=0       # se
-declare    old_boost=''      # must be string, bash can't handle decimal numbers
-declare -i old_boost_int=0   # se
-declare    regex=''          # se
-declare -i ret_val=999       # 999 is safe default, functions return 1 to 10
-declare    scale=''          # must be string, bash can't handle decimal numbers
-declare    scr_cst_wh=''     # screen custom width x height
-declare -i scr_cur_w=0       # screen current width
-declare -i scr_cur_h=0       # screen current height
-declare -i scr_new_w=0       # screen new width
-declare -i scr_new_h=0       # screen new height
-declare -a xrandr_info=()    # se
+declare    awk_one_liner='' # se
+declare    boost=''         # user supplied boost val, eg 35.7%
+declare -i boost_int=0      # boost val rounded to nearest integer, eg 36
+declare -i boost_d=0        # default boost val, eg 25
+declare    dependency=''    # se
+declare    dsp_name=''      # display name, must be string, letters + numbers
+declare -i dsp_max_w=0      # display max width
+declare -i dsp_max_h=0      # display max height
+declare    old_boost=''     # must be string, bash can't handle decimal numbers
+declare -i old_boost_int=0  # se
+declare    regex=''         # se
+declare -i ret_val=999      # 999 is safe default, functions return 1 to 10
+declare    scale=''         # must be string, bash can't handle decimal numbers
+declare    scr_cst_wh=''    # screen custom width x height
+declare -i scr_cur_w=0      # screen current width
+declare -i scr_cur_h=0      # screen current height
+declare -i scr_new_w=0      # screen new width
+declare -i scr_new_h=0      # screen new height
+declare -a xrandr_info=()   # se
 
 ## define functions
 # die() is called if we have a fatal error, eg
@@ -54,7 +55,7 @@ die() {
     echo "$BASH_SOURCE: line $2: ERROR, $1" > /dev/stderr
     exit $3
   else
-    echo "$BASH_SOURCE: unspecified error." > /dev/stderr
+    echo "$BASH_SOURCE: line $LINENO: unspecified error." > /dev/stderr
     exit 999
   fi
 }
@@ -72,21 +73,34 @@ Usage:
   $BASH_SOURCE --reset
 
 Options:
-  -b     --boost    How much to boost screen size by, percentage value.
+  -b     --boost       How much to boost screen size by, percentage value.
 
-                    For example, '--boost 25%' would allow you to see 25% more
-                    of the windows you have open. If that makes text too small
-                    to read, '--boost -5%' would adjust it down to 20%.
+                       For example, '--boost 25%' would allow you to see
+                       25% more of the windows you have open. If that makes
+                       text too small to read, '--boost -5%' would adjust it
+                       down to 20%.
 
-                    Recommended range is 25% to 50%. Computers with a
-                    small screen (eg netbooks) should use a value closer
-                    to 25%, computers with a large screen but small display 
-                    (eg old laptops with a 1024x768 display) should use
-                    a value closer to 50%.
-  -h     --help     Display this help.
-  -r     --reset    Reset screen size to display resolution.
-  -s     --screen   Boost screen size to this resolution. For example,
-                    '--screen 1920x1080'.
+                       Recommended range is 25 to 50%. Computers with a
+                       small screen (eg netbooks) should use a value closer
+                       to 25%, computers with a large screen but small display
+                       (eg old laptops with a 1024x768 display) should use
+                       a value closer to 50%.
+  -d     --default     This script has a default boost value of '--boost 35%'.
+                       
+                       If you would like to make the current boost value
+                       the new default, use this option. For example,
+                         '$BASH_SOURCE --boost 40%' followed by
+                         '$BASH_SOURCE --default' followed by
+                         '$BASH_SOURCE --reset' followed by
+                         '$BASH_SOURCE' 
+                       would result in a boost value of '--boost 40%'.
+
+                       Note this option creates a file in your home directory,
+                       '~/.resizescreen'.
+  -h     --help        Display this help.
+  -r     --reset       Reset screen size to display resolution.
+  -s     --screen      Boost screen size to this resolution. For example,
+                       '--screen 1920x1080'.
 END_USAGE
   exit 0
 }
@@ -120,47 +134,54 @@ get_answer() {
   echo $answer
 }
 
-# check_boost() does a sanity check on $boost_int,
-# and performs an adjustment if <0
+# FIXME: function description
 #
 # no args
 #
-# returns 0 if $boost_int is sane, >25 and <50
-# returns 1 if $boost_int isn't sane, <25 or >50, hasn't been adjusted
-# returns 2 if $boost_int isn't sane, <25 or >50, has been adjusted
+# no return value
+get_old_boost() {
+  awk_one_liner="BEGIN{ print (($scr_cur_w / $dsp_max_w) * 100) - 100; }"
+  old_boost=$(
+    dc         <<< "5 k $scr_cur_w $dsp_max_w / 100 * 100 - p" 2>/dev/null || \
+    busybox dc <<< "$scr_cur_w $dsp_max_w / 100 * 100 - p"     2>/dev/null || \
+    awk         -- "$awk_one_liner"                            2>/dev/null || \
+    busybox awk -- "$awk_one_liner"                            2>/dev/null || \
+    get_answer "(($scr_cur_w / $dsp_max_w) * 100) - 100"
+  )
+  # round to nearest integer
+  old_boost_int=$(printf '%.0f' $old_boost)
+}
+
+# FIXME: function description
+#
+# no args
+#
+# no return value
+adjust_boost() {
+  get_old_boost
+  boost_int=$(( $old_boost_int + $boost_int ))
+}
+
+# check_boost() does a sanity check on $boost_int
+#
+# no args
+#
+# returns 0 if $boost_int is sane, within 25 to 50 range
+# returns 1 if $boost_int isn't sane, but it is >0 (no adjustment needed)
+# returns 2 if $boost_int isn't sane, and <0 (needs adjustment)
 check_boost() {
-  local -i my_ret_val=999
-
   if
-    (( $boost_int < 0 ))
+    (( $boost_int >= 25 )) && \
+    (( $boost_int <= 50 ))
   then
-    awk_one_liner="BEGIN{ print (($scr_cur_w / $dsp_max_w) * 100) - 100; }"
-    old_boost=$(
-      dc         <<< "5 k $scr_cur_w $dsp_max_w / 100 * 100 - p" 2>/dev/null || \
-      busybox dc <<< "$scr_cur_w $dsp_max_w / 100 * 100 - p"     2>/dev/null || \
-      awk         -- "$awk_one_liner"                            2>/dev/null || \
-      busybox awk -- "$awk_one_liner"                            2>/dev/null || \
-      get_answer "(($scr_cur_w / $dsp_max_w) * 100) - 100"
-    )
-    # round to nearest integer
-    old_boost_int=$(printf '%.0f' $old_boost)
-    boost_int=$(( $old_boost_int + $boost_int ))
-    if
-      (( $boost_int < 25 )) || \
-      (( $boost_int > 50 ))
-    then
-      my_ret_val=2
-    fi
+    return 0
   elif
-    (( $boost_int < 25 )) || \
-    (( $boost_int > 50 ))
+    (( $boost_int > 0 ))
   then
-    my_ret_val=1
+    return 1
   else
-    my_ret_val=0
+    return 2
   fi
-
-  return $my_ret_val
 }
 
 # check_screen() does a sanity check on $scr_new_w and $scr_new_h
@@ -174,7 +195,6 @@ check_screen() {
   local -i max_sane_w=0
   local -i min_sane_h=0
   local -i max_sane_h=0
-  local -i my_ret_val=999
 
   # minimum sane width = 1.25 x display max width
   # maximum sane width = 1.5 x display max width
@@ -186,19 +206,54 @@ check_screen() {
 
   if
     (( $scr_new_w < $min_sane_w )) || \
-    (( $scr_new_w > $max_sane_w ))
-  then
-    my_ret_val=1
-  elif
+    (( $scr_new_w > $max_sane_w )) || \
     (( $scr_new_h < $min_sane_h )) || \
     (( $scr_new_h > $max_sane_h ))
   then
-    my_ret_val=1
+    return 1
   else
-    my_ret_val=0
+    return 0
   fi
+}
 
-  return $my_ret_val    
+# FIXME: function description
+#
+# no args
+#
+# no return value
+set_default_boost() {
+  get_old_boost
+  # needed for check_boost()
+  boost_int=$old_boost_int
+
+  check_boost
+  ret_val=$?
+  if
+    (( $ret_val == 0 ))
+  then
+    echo $boost_int > ~/.resizescreen
+    echo "Set default '--boost ${boost_int}%'."
+    exit 0
+  else
+    die "sanity check failed, couldn't set default." $LINENO 3
+  fi
+}
+
+# FIXME: function description
+#
+# no args
+#
+# returns 0 if file exists, able to get default
+# returns 1 otherwise
+get_default_boost() {
+  if
+    [[ -e ~/.resizescreen ]]
+  then
+    cat ~/.resizescreen
+    return 0
+  else
+    return 1
+  fi
 }
 
 ## assign vars
@@ -246,18 +301,23 @@ else
   die "couldn't match regex." $LINENO 2
 fi
 
+# if we don't have a saved default boost value,
+# eg ~/.resizescreen file doesn't exist,
+# make default 35
+boost_d=$(get_default_boost) || \
+  boost_d=35
+
 ## process options
 while
   (( $# >= 1 ))
 do
-  # use case rather than if/elif/else,
-  # in future we may add more than 3 options to script
   case $1 in
-    '-b' |  '--boost') boost=$2; shift 2;;
-    '-h' |   '--help') usage;;
-    '-r' |  '--reset') reset;;
-    '-s' | '--screen') scr_cst_wh=$2; shift 2;;
-                    *) echo "WARNING, option '$1' not recognised."; shift 1;;
+    '-b' |   '--boost') boost=$2; shift 2;;
+    '-d' | '--default') set_default_boost;;
+    '-h' |    '--help') usage;;
+    '-r' |   '--reset') reset;;
+    '-s' |  '--screen') scr_cst_wh=$2; shift 2;;
+                     *) echo "WARNING, option '$1' not recognised."; shift 1;;
   esac
 done
 
@@ -270,8 +330,8 @@ then
     [[ $boost != ?[0-9]* ]]
   then
     echo "WARNING, \'--boost $boost\' is not a number, defaulting to \
-          \'--boost 35%\'." | xargs
-    boost_int=35
+          \'--boost ${boost_d}%\'." | xargs
+    boost_int=$boost_d
   else
     # strip percent char (%) and round to nearest integer
     # $boost may already be an integer,
@@ -289,8 +349,10 @@ then
     elif
       (( $ret_val == 2 ))
     then
-      echo "WARNING, adjusted value \'--boost ${boost_int}%\' is outside the \
-            recommended range (25 to 50%)." | xargs
+      adjust_boost
+      check_boost || \
+        echo "WARNING, adjusted value \'--boost ${boost_int}%\' is outside the \
+              recommended range (25 to 50%)." | xargs
     fi      
   fi
 
@@ -304,26 +366,21 @@ then
   then
     scr_new_w=${BASH_REMATCH[1]}
     scr_new_h=${BASH_REMATCH[2]}
-    check_screen
-    ret_val=$?
-    if
-      (( $ret_val == 1 ))
-    then
+    check_screen || \
       echo "WARNING, '--screen $scr_cst_wh' is outside the recommended range."
-    fi
   else
-    scr_new_w=$(( ($dsp_max_w * 135) / 100 ))
-    scr_new_h=$(( ($dsp_max_h * 135) / 100 ))
-    echo "WARNING, argument for the \'--screen\' option must be
+    scr_new_w=$(( ($dsp_max_w * ($boost_d + 100)) / 100 ))
+    scr_new_h=$(( ($dsp_max_h * ($boost_d + 100)) / 100 ))
+    echo "WARNING, argument for the \'--screen\' option must be \
           \'number x number\' without spaces, eg \'--screen 1920x1080\'. \
           Defaulting to \'--screen ${scr_new_w}x${scr_new_h}\'." | xargs
   fi
 
 # handle no options
 else
-  echo "WARNING, you didn\'t specify the \'--boost\' option or the \'--screen\'
-        option, defaulting to \'--boost 35%\'." | xargs
-  boost_int=35
+  echo "WARNING, you didn\'t specify the \'--boost\' option or the \'--screen\' \
+        option, defaulting to \'--boost ${boost_d}%\'." | xargs
+  boost_int=$boost_d
 fi
 
 if
