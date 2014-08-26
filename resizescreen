@@ -235,7 +235,7 @@ set_boost_default() {
     echo "Set default '--boost ${boost_int}%'."
     exit 0
   else
-    die "sanity check failed, couldn't set default." $LINENO 3
+    die "sanity check failed, not setting a new default." $LINENO 3
   fi
 }
 
