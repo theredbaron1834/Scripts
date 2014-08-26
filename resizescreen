@@ -18,22 +18,24 @@
 
 ## declare vars
 shopt -os nounset
-declare    awk_one_liner='' # se
-declare    dependency=''    # se
-declare    dsp_name=''      # display name, must be string, letters + numbers
-declare -i dsp_max_w=0      # display max width
-declare -i dsp_max_h=0      # display max height
-declare    boost=''         # se
-declare -i boost_int=0      # se
-declare    old_boost=''     # must be string, bash can't handle decimal numbers
-declare -i old_boost_int=0  # se
-declare    regex=''         # se
-declare    scale=''         # must be string, bash can't handle decimal numbers
-declare -i scr_cur_w=0      # screen current width
-declare -i scr_cur_h=0      # screen current height
-declare -i scr_new_w=0      # screen new width
-declare -i scr_new_h=0      # screen new height
-declare -a xrandr_info=()   # se
+declare    awk_one_liner=''  # se
+declare    dependency=''     # se
+declare    dsp_name=''       # display name, must be string, letters + numbers
+declare -i dsp_max_w=0       # display max width
+declare -i dsp_max_h=0       # display max height
+declare    boost=''          # se
+declare -i boost_int=0       # se
+declare    old_boost=''      # must be string, bash can't handle decimal numbers
+declare -i old_boost_int=0   # se
+declare    regex=''          # se
+declare -i ret_val=999       # 999 is safe default, functions return 1 to 10
+declare    scale=''          # must be string, bash can't handle decimal numbers
+declare    scr_cst_wh=''     # screen custom width x height
+declare -i scr_cur_w=0       # screen current width
+declare -i scr_cur_h=0       # screen current height
+declare -i scr_new_w=0       # screen new width
+declare -i scr_new_h=0       # screen new height
+declare -a xrandr_info=()    # se
 
 ## define functions
 # die() is called if we have a fatal error, eg
@@ -83,6 +85,8 @@ Options:
                     a value closer to 50%.
   -h     --help     Display this help.
   -r     --reset    Reset screen size to display resolution.
+  -s     --screen   Boost screen size to this resolution. For example,
+                    '--screen 1920x1080'.
 END_USAGE
   exit 0
 }
@@ -114,6 +118,87 @@ get_answer() {
   
   read -p "Please manually calculate ${equation}: " answer
   echo $answer
+}
+
+# check_boost() does a sanity check on $boost_int,
+# and performs an adjustment if <0
+#
+# no args
+#
+# returns 0 if $boost_int is sane, >25 and <50
+# returns 1 if $boost_int isn't sane, <25 or >50, hasn't been adjusted
+# returns 2 if $boost_int isn't sane, <25 or >50, has been adjusted
+check_boost() {
+  local -i my_ret_val=999
+
+  if
+    (( $boost_int < 0 ))
+  then
+    awk_one_liner="BEGIN{ print (($scr_cur_w / $dsp_max_w) * 100) - 100; }"
+    old_boost=$(
+      dc         <<< "5 k $scr_cur_w $dsp_max_w / 100 * 100 - p" 2>/dev/null || \
+      busybox dc <<< "$scr_cur_w $dsp_max_w / 100 * 100 - p"     2>/dev/null || \
+      awk         -- "$awk_one_liner"                            2>/dev/null || \
+      busybox awk -- "$awk_one_liner"                            2>/dev/null || \
+      get_answer "(($scr_cur_w / $dsp_max_w) * 100) - 100"
+    )
+    # round to nearest integer
+    old_boost_int=$(printf '%.0f' $old_boost)
+    boost_int=$(( $old_boost_int + $boost_int ))
+    if
+      (( $boost_int < 25 )) || \
+      (( $boost_int > 50 ))
+    then
+      my_ret_val=2
+    fi
+  elif
+    (( $boost_int < 25 )) || \
+    (( $boost_int > 50 ))
+  then
+    my_ret_val=1
+  else
+    my_ret_val=0
+  fi
+
+  return $my_ret_val
+}
+
+# check_screen() does a sanity check on $scr_new_w and $scr_new_h
+#
+# no args
+#
+# returns 0 if $scr_new_w and $scr_new_h are sane
+# returns 1 otherwise
+check_screen() {
+  local -i min_sane_w=0
+  local -i max_sane_w=0
+  local -i min_sane_h=0
+  local -i max_sane_h=0
+  local -i my_ret_val=999
+
+  # minimum sane width = 1.25 x display max width
+  # maximum sane width = 1.5 x display max width
+  # same, as above, for height
+  min_sane_w=$(( ($dsp_max_w * 125) / 100 ))
+  max_sane_w=$(( ($dsp_max_w * 150) / 100 ))
+  min_sane_h=$(( ($dsp_max_h * 125) / 100 ))
+  max_sane_h=$(( ($dsp_max_h * 150) / 100 ))
+
+  if
+    (( $scr_new_w < $min_sane_w )) || \
+    (( $scr_new_w > $max_sane_w ))
+  then
+    my_ret_val=1
+  elif
+    (( $scr_new_h < $min_sane_h )) || \
+    (( $scr_new_h > $max_sane_h ))
+  then
+    my_ret_val=1
+  else
+    my_ret_val=0
+  fi
+
+  return $my_ret_val    
 }
 
 ## assign vars
@@ -168,63 +253,86 @@ do
   # use case rather than if/elif/else,
   # in future we may add more than 3 options to script
   case $1 in
-    '-h' |  '--help') usage;;
-    '-b' | '--boost') boost=$2; shift 2;;
-    '-r' | '--reset') reset;;
-                   *) echo "WARNING, option '$1' not recognised."; shift 1;;
+    '-b' |  '--boost') boost=$2; shift 2;;
+    '-h' |   '--help') usage;;
+    '-r' |  '--reset') reset;;
+    '-s' | '--screen') scr_cst_wh=$2; shift 2;;
+                    *) echo "WARNING, option '$1' not recognised."; shift 1;;
   esac
 done
 
 ## body of script
-# process user input $boost -> $boost_int
+# handle --boost option
 if
-  [[ ${boost:-unset} = unset ]]
+  [[ ${boost:+set} = set ]]
 then
-  echo "WARNING, you forgot the '--boost' option, defaulting to '--boost 35%'."
-  boost_int=35
-elif
-  [[ $boost != [0-9]* ]]
-then
-  echo "WARNING, '--boost $boost' is not a number, defaulting to '--boost 35%'."
-  boost_int=35
-else
-  # strip percent char (%) and round to nearest integer
-  # $boost may already be an integer,
-  # but one superfluous call to printf doesn't matter
-  boost_int=$(printf '%.0f' ${boost%\%})
-fi
-
-# check $boost_int is a sane value
-if
-  (( $boost_int < 0 ))
-then
-  awk_one_liner="BEGIN{ print (($scr_cur_w / $dsp_max_w) * 100) - 100; }"
-  old_boost=$(
-    dc         <<< "5 k $scr_cur_w $dsp_max_w / 100 * 100 - p" 2>/dev/null || \
-    busybox dc <<< "$scr_cur_w $dsp_max_w / 100 * 100 - p"     2>/dev/null || \
-    awk         -- "$awk_one_liner"                            2>/dev/null || \
-    busybox awk -- "$awk_one_liner"                            2>/dev/null || \
-    get_answer "(($scr_cur_w / $dsp_max_w) * 100) - 100"
-  )
-  # round to nearest integer
-  old_boost_int=$(printf '%.0f' $old_boost)
-  boost_int=$(( $old_boost_int + $boost_int ))
   if
-    (( $boost_int < 25 )) || \
-    (( $boost_int > 50 ))
+    [[ $boost != ?[0-9]* ]]
   then
-    echo "WARNING, adjusted value \'--boost ${boost_int}%\' is outside the \
-          recommended range (25 to 50%)." | xargs
+    echo "WARNING, \'--boost $boost\' is not a number, defaulting to \
+          \'--boost 35%\'." | xargs
+    boost_int=35
+  else
+    # strip percent char (%) and round to nearest integer
+    # $boost may already be an integer,
+    # but one superfluous call to printf doesn't matter
+    boost_int=$(printf '%.0f' ${boost%\%})
+
+    # check $boost_int is sane value
+    check_boost
+    ret_val=$?
+    if
+      (( $ret_val == 1 ))
+    then
+      echo "WARNING, \'--boost $boost\' is outside the recommended range \
+            (25 to 50%)." | xargs
+    elif
+      (( $ret_val == 2 ))
+    then
+      echo "WARNING, adjusted value \'--boost ${boost_int}%\' is outside the \
+            recommended range (25 to 50%)." | xargs
+    fi      
   fi
+
+# handle --screen option
 elif
-  (( $boost_int < 25 )) || \
-  (( $boost_int > 50 ))
+  [[ ${scr_cst_wh:+set} = set ]]
 then
-  echo "WARNING, '--boost $boost' is outside the recommended range (25 to 50%)."
+  regex="^([0-9]+)x([0-9]+)$"
+  if
+    [[ $scr_cst_wh =~ $regex ]]
+  then
+    scr_new_w=${BASH_REMATCH[1]}
+    scr_new_h=${BASH_REMATCH[2]}
+    check_screen
+    ret_val=$?
+    if
+      (( $ret_val == 1 ))
+    then
+      echo "WARNING, '--screen $scr_cst_wh' is outside the recommended range."
+    fi
+  else
+    scr_new_w=$(( ($dsp_max_w * 135) / 100 ))
+    scr_new_h=$(( ($dsp_max_h * 135) / 100 ))
+    echo "WARNING, argument for the \'--screen\' option must be
+          \'number x number\' without spaces, eg \'--screen 1920x1080\'. \
+          Defaulting to \'--screen ${scr_new_w}x${scr_new_h}\'." | xargs
+  fi
+
+# handle no options
+else
+  echo "WARNING, you didn\'t specify the \'--boost\' option or the \'--screen\'
+        option, defaulting to \'--boost 35%\'." | xargs
+  boost_int=35
 fi
 
-scr_new_w=$(( ($dsp_max_w * ($boost_int + 100)) / 100 ))
-scr_new_h=$(( ($dsp_max_h * ($boost_int + 100)) / 100 ))
+if
+  (( $boost_int != 0 ))
+then
+  scr_new_w=$(( ($dsp_max_w * ($boost_int + 100)) / 100 ))
+  scr_new_h=$(( ($dsp_max_h * ($boost_int + 100)) / 100 ))
+fi
+
 awk_one_liner="BEGIN{ print $scr_new_w / $dsp_max_w; }"
 scale=$(
   dc         <<< "5 k $scr_new_w $dsp_max_w / p" 2>/dev/null || \
