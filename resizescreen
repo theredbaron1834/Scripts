@@ -65,9 +65,9 @@ Options:
                    a few times until you find a screen size you like.
 
                    Using a negative value will make the script
-                   adjust the previously used boost value, so
-                   ${grn}--boost 40%${clr} becomes ${grn}--boost 35%${clr},
-                   ${grn}30%${clr}, ${grn}25%${clr}, etc.
+                   adjust the previously used boost value, so in the example
+                   above ${grn}--boost 40%${clr} becomes ${grn}--boost 35%${clr},
+                   then ${grn}30%${clr}, then ${grn}25%${clr}, etc.
 
                    Recommended range is 25 to 50%. Computers with a
                    small screen (eg netbooks) should use a value closer
@@ -251,7 +251,7 @@ set_boost_default() {
     exit 0
   else
     die "sanity check failed. Not setting a ${grn}--boost${clr} value outside
-         the recommended range (25 to 50%) as new default." $LINENO 3
+         the recommended range (25 to 50%) as default." $LINENO 3
   fi
 }
 
