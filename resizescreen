@@ -233,13 +233,13 @@ check_screen() {
   fi
 }
 
-# set_boost_default() saves the previously used --boost setting
+# save_boost_default() saves the previously used --boost setting
 # to a file in the user's home directory, then exits
 #
 # no args
 #
 # no return value
-set_boost_default() {
+save_boost_default() {
   get_boost_old
 
   check_boost $boost_old_int
@@ -327,7 +327,7 @@ while
 do
   case $1 in
     '-b' |   '--boost') boost=$2; shift 2;;
-    '-d' | '--default') set_boost_default;;
+    '-d' | '--default') save_boost_default;;
     '-h' |    '--help') usage;;
     '-r' |   '--reset') reset;;
     '-s' |  '--screen') scr_cst_wh=$2; shift 2;;
