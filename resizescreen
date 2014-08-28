@@ -3,7 +3,7 @@
 ## script info
 # name: resizescreen.sh
 # author: theredbaron1834
-# purpose: a simple script to give you a boosted virtual resolution
+# purpose: a simple script to give you a boosted screen size
 # last updated: august 2014
 # dependencies:
 # - bash v4
@@ -181,9 +181,9 @@ get_boost_old() {
 # one arg:
 # $1, percentage value to check, integer
 #
-# returns 0 if $percentage is sane, within 25 to 50 range
-# returns 1 if $percentage isn't sane, but it is >0 (no adjustment needed)
-# returns 2 if $percentage isn't sane, and <0 (needs adjustment)
+# returns 0 if $percentage is sane, 25..50
+# returns 1 if $percentage isn't sane, 0..24 or >50
+# returns 2 if $percentage isn't sane, <0
 check_boost() {
   local -i percentage=$1
 
@@ -193,7 +193,7 @@ check_boost() {
   then
     return 0
   elif
-    (( $percentage > 0 ))
+    (( $percentage >= 0 ))
   then
     return 1
   else
@@ -241,8 +241,10 @@ check_screen() {
 # no return value
 set_boost_default() {
   get_boost_old
+
   check_boost $boost_old_int
   ret_val=$?
+
   if
     (( $ret_val == 0 ))
   then
@@ -338,28 +340,24 @@ done
 if
   [[ ${boost:+set} = set ]]
 then
+  regex="^-?[.0-9]+%?$"
   if
-    [[ $boost != ?[0-9]* ]]
+    [[ $boost =~ $regex ]]
   then
-    warn "${grn}--boost $boost${clr} is not a number,
-          defaulting to ${grn}--boost ${boost_default}%${clr}."
-    boost_int=$boost_default
-  else
-    # strip percent char (%) and round to nearest integer
-    # $boost may already be an integer,
-    # but one superfluous call to printf doesn't matter
+    # strip percent char and round to nearest integer
     boost_int=$(printf '%.0f' ${boost%\%})
 
     # sanity check $boost_int
     check_boost $boost_int
     ret_val=$?
-    # warn user if $boost_int is <25 or >50
+
+    # warn user if $boost_int is 0..24 or >50
     if
       (( $ret_val == 1 ))
     then
       warn "${grn}--boost ${boost_int}%${clr} is outside the recommended range
             (25 to 50%)."
-    # adjust $boost_int if <0
+    # perform adjustment if $boost_int is <0
     elif
       (( $ret_val == 2 ))
     then
@@ -369,6 +367,10 @@ then
         warn "adjusted value ${grn}--boost ${boost_int}%${clr} is outside the
               recommended range (25 to 50%)."
     fi      
+  else
+    warn "${grn}--boost $boost${clr} is not a number,
+          defaulting to ${grn}--boost ${boost_default}%${clr}."
+    boost_int=$boost_default
   fi
 
 # handle --screen option
