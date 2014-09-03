@@ -1,6 +1,6 @@
 #!/bin/bash
 #Grab the current used screen
-output=$(xrandr | grep primary | sed -e 's/\s\+/\n/g' | head -n 1) 
+output=$(xrandr | grep -e " connected [^(]" | sed -e "s/\([A-Z0-9]\+\) connected.*/\1/")
 # Set the default screensize
 size=25 
 # Grabing the current X res
