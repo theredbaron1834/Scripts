@@ -1,4 +1,14 @@
-#!/bin/bash
+#!/bin/sh
+#check for dualscreen
+dualscreen=$(xrandr | grep -v disconnected | grep -v VIRTUAL | grep connected | wc -l)
+if [ "$dualscreen" != "1" ]
+	then
+	echo "Sorry, but xrandr scalling has trouble with multiscreen's. Thus you are unable to use this."
+	exit
+fi
+
+
+
 #Grab the current used screen
 output=$(xrandr | grep -e " connected [^(]" | sed -e "s/\([A-Z0-9]\+\) connected.*/\1/")
 # Set the default screensize
@@ -15,16 +25,23 @@ current=$(xrandr | grep Screen | sed -e 's/\,/\n/g' | grep current | sed -e 's/ 
 
 
 # Grab the command options
-optstr=hs:   
+optstr=hpvs:   
+
+
 
 while getopts $optstr var
 do
   case $var in
-    s) size=$OPTARG ;;
-    h) echo "This is a simple script to give you a boosted virtual resolution +25% by default. IE, the max resolution for many netbook is 1024x600. With this you can "trick" it to being 1280x750 by boosting it 25%. This can make it to blurry for some, but it helps you run apps that need a higher resolution. For 1024x600, I find the sweet spot to be 35%, but everybody has different taste/eyes. It is not recommended, but you can go as high as you want. Want 20000x20000, go for it. Don't expect to see much, but still. Go for it :).
-    
--h this help
--s The size to increase by in %, without the % (example -s 25). Default is 25"; exit ;;
+	p) pause=yes ;;
+	v) verbose=yes ;;
+	s) size=$OPTARG ;;
+	h) echo "This is a simple script to give you a boosted virtual resolution +25% by default. IE, the max resolution for many netbook is 1024x600. With this you can "trick" it to being 1280x750 by boosting it 25%. This can make it to blurry for some, but it helps you run apps that need a higher resolution. For 1024x600, I find the sweet spot to be 35%, but everybody has different taste/eyes. It is not recommended, but you can go as high, or low if you pass a negitive number, as you want. Want 20000x20000, go for it. Don't expect to see much, but still. Go for it :).
+
+
+-h This help
+-p Pauses before running the command. Use with -v to see the command before it runs
+-s The size to increase by in %, without the % (example -s 25). Default is 25
+-v Gives more info as it runs";exit ;;
   esac
 done
 shift $(( $OPTIND - 1 )) 
@@ -39,13 +56,19 @@ scale=$(awk 'BEGIN{print '$newx' / '$x'}')
 
 
 # This provides some feedback
-echo "Real Resolution	- $real"
-echo "Current Resolution	- $current"
-echo "New  Resolution		- "$newx"x"$newy""
-echo "Scale			- $scale"
-echo "xrand command is	- xrandr --output $output --mode $real --panning "$newx"x"$newy" --scale "$scale"x"$scale""
+if [ "$verbose" == "yes" ]
+	then
+	echo "Real Resolution	- $real"
+	echo "Current Resolution	- $current"
+	echo "New  Resolution		- "$newx"x"$newy""
+	echo "Scale			- $scale"
+	echo "xrand command is	- xrandr --output $output --mode $real --panning "$newx"x"$newy" --scale "$scale"x"$scale""
+fi
 
-read -p "Press any key to continue." -s
+if [ "$pause" == "yes" ]
+	then
+	read -p "Press any key to continue." -s
+fi
 
 # The actual command that boosts your screen size
 xrandr --output $output --mode $real --panning "$newx"x"$newy" --scale "$scale"x"$scale"
