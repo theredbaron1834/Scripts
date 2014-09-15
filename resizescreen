@@ -1,4 +1,5 @@
 #!/bin/sh
+
 #check for dualscreen
 dualscreen=$(xrandr | grep -v disconnected | grep -v VIRTUAL | grep connected | wc -l)
 if [ "$dualscreen" != "1" ]
@@ -7,28 +8,11 @@ if [ "$dualscreen" != "1" ]
 	exit
 fi
 
-
-
-#Grab the current used screen
-output=$(xrandr | grep -e " connected [^(]" | sed -e "s/\([A-Z0-9]\+\) connected.*/\1/")
 # Set the default screensize
 size=25 
-# Grabing the current X res
-x=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | head -n 1) 
-# Grabing the current y res
-y=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | tail -n 1) 
-# Grabbing the max actual screen res
-real=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1) 
-# This grabs the current screensize, be it the actual size or virtual
-current=$(xrandr | grep Screen | sed -e 's/\,/\n/g' | grep current | sed -e 's/ x /x/g' | sed -e 's/\s\+/\n/g' | sed '/^$/d' | grep -v current) 
-
-
 
 # Grab the command options
 optstr=hpvs:   
-
-
-
 while getopts $optstr var
 do
   case $var in
@@ -46,29 +30,38 @@ do
 done
 shift $(( $OPTIND - 1 )) 
 
-# Thanks to /u/Schmeidenbacher on Reddit for this. Grabs the new boosted screen size
+#Grab the current used screen
+output=$(xrandr | grep -e " connected [^(]" | sed -e "s/\([A-Z0-9]\+\) connected.*/\1/")
 
+# Grabing the current X res
+x=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | head -n 1) 
+
+# Grabing the current y res
+y=$(xrandr | grep -v connected | grep -v Screen | sed -e 's/\s\+/\n/g' | sed '/^$/d' | head -n 1 | sed -e 's/x/\n/g' | tail -n 1) 
+
+# This grabs the current screensize, be it the actual size or virtual
+current=$(xrandr | grep Screen | sed -e 's/\,/\n/g' | grep current | sed -e 's/ x /x/g' | sed -e 's/\s\+/\n/g' | sed '/^$/d' | grep -v current) 
+
+# Thanks to /u/Schmeidenbacher on Reddit for this. Grabs the new boosted screen size
 newx=$(( $x * ( 100 +  $size )  / 100  ))
 newy=$(( $y * ( 100 +  $size )  / 100  ))
-
-
 scale=$(awk 'BEGIN{print '$newx' / '$x'}')
-
 
 # This provides some feedback
 if [ "$verbose" == "yes" ]
 	then
-	echo "Real Resolution	- $real"
+	echo "Real Resolution		- "$x"x"$y""
 	echo "Current Resolution	- $current"
 	echo "New  Resolution		- "$newx"x"$newy""
 	echo "Scale			- $scale"
-	echo "xrand command is	- xrandr --output $output --mode $real --panning "$newx"x"$newy" --scale "$scale"x"$scale""
+	echo "xrand command is	- xrandr --output $output --mode "$x"x"$y" --panning "$newx"x"$newy" --scale "$scale"x"$scale""
 fi
 
+# Adds a pause before running the actual command.
 if [ "$pause" == "yes" ]
 	then
 	read -p "Press any key to continue." -s
 fi
 
 # The actual command that boosts your screen size
-xrandr --output $output --mode $real --panning "$newx"x"$newy" --scale "$scale"x"$scale"
+xrandr --output $output --mode "$x"x"$y" --panning "$newx"x"$newy" --scale "$scale"x"$scale"
