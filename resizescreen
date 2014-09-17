@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #check for dualscreen
 dualscreen=$(xrandr | grep -v disconnected | grep -v VIRTUAL | grep connected | wc -l)
