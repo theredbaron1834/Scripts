@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Set default backend
+backend=jp
+
+# Grab options
+optstr=hb:
+while getopts $optstr var
+do
+case $var in
+b) backend=$OPTARG ;;
+h) echo "This is a simple script to grab wallpaper from Bijin-Tokei (http://www.bijint.com/) and set them every minute, as close to on the minute as I can get it. Bijin-Tokei is a wallpaper style that has people holding up the time. I don't read Japanese(which the site is in), or speak it for that matter. However, I assume that the backends are seperated by city/provence, ect, with most of them being just girls, and binan being just guys.
+
+-h This help
+-b Sets the backend to use. You have your choice of okinawa, nagoya, jp, osaka, chiba, aomori, niigata, kyoto, kobe, hiroshima, nagasaki, saitama, fukuoka, tochigi, kagoshima, or binan. By default it uses jp.";exit ;;
+esac
+done
+shift $(( $OPTIND - 1 )) 
+
+# Make tmp dir
+mkdir /tmp/tokei/
+
+while :
+do
+	
+	# Get picture for current time
+	date=$(date +%H%M)
+	wget -O /tmp/tokei/wallpaper.jpg http://www.bijint.com/$backend/tokei_images/$date.jpg
+
+	# Set picture to the wallpaper for various desktops
+	mateconftool-2 -t str --set /desktop/mate/background/picture_filename  /tmp/tokei/wallpaper.jpg
+	mateconftool-2 -t str --set /desktop/mate/background/picture_options stretched
+	pcmanfm --set-wallpaper  /tmp/tokei/wallpaper.jpg --wallpaper-mode=scaled
+	gconftool-2 -t str --set /desktop/gnome/background/picture_filename  /tmp/tokei/wallpaper.jpg
+	gconftool-2 -t str --set /desktop/gnome/background/picture_options stretched
+	feh --bg-scale  /tmp/tokei/wallpaper.jpg
+	xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path -s  /tmp/tokei/wallpaper.jpg
+
+# This set here makes it sleep till the next minute. Thus, as soon as the minute changes, it starts changing the background.
+seconds=$(date +%S)
+let "sleep = 60 - $seconds"
+echo "sleeping for $sleep seconds"
+sleep $sleep
+
+done
