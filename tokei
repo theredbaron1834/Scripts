@@ -1,40 +1,109 @@
 #!/bin/bash
-
-# Set default backend
-backend=jp
+setbackend=1
+setdesktop=1
 
 # Grab options
-optstr=hb:
+optstr=hb:d:
 while getopts $optstr var
 do
 case $var in
-b) backend=$OPTARG ;;
+b) backend=$OPTARG; setbackend=0 ;;
+d) desktop=$OPTARG; setdesktop=0 ;;
 h) echo "This is a simple script to grab wallpaper from Bijin-Tokei (http://www.bijint.com/) and set them every minute, as close to on the minute as I can get it. Bijin-Tokei is a wallpaper style that has people holding up the time. I don't read Japanese(which the site is in), or speak it for that matter. However, I assume that the backends are seperated by city/provence, ect, with most of them being just girls, and binan being just guys.
 
 -h This help
--b Sets the backend to use. You have your choice of okinawa, nagoya, jp, osaka, chiba, aomori, niigata, kyoto, kobe, hiroshima, nagasaki, saitama, fukuoka, tochigi, kagoshima, or binan. By default it uses jp.";exit ;;
+-b Sets the backend to use. You have your choice of okinawa, nagoya, jp, osaka, chiba, aomori, niigata, kyoto, kobe, hiroshima, nagasaki, saitama, fukuoka, tochigi, kagoshima, or binan. By default it uses jp.
+-d Sets the desktop to use. You have your choice of lxdm, xfce, feh, mate, gnome, and unity, with lxdm being the default.";exit ;;
 esac
 done
 shift $(( $OPTIND - 1 )) 
 
-# Make tmp dir
-mkdir /tmp/tokei/
+# Check for config file/dir
+if [ ! -f ~/.config/tokei/config.conf ]
+	then
+		mkdir -p ~/.config/tokei/wallpaper/jp/
+    	echo "backend=jp" > ~/.config/tokei/config.conf
+		echo desktop=lxdm >> ~/.config/tokei/config.conf
+fi
+
+# Set desktop
+if [ $setdesktop = "0" ]
+	then
+		echo $(cat ~/.config/tokei/config.conf | grep -v desktop) > ~/.config/tokei/config.conf
+		echo "desktop=$desktop" >> ~/.config/tokei/config.conf
+		echo "Desktop set as $desktop" 
+	else
+		desktop=$(cat ~/.config/tokei/config.conf | grep desktop | sed -e 's/=/\n/g' | grep -v desktop)
+		echo "Desktop set as $desktop"
+fi
+
+# Set backend
+if [ $setbackend = "0" ]
+	then
+		echo $(cat ~/.config/tokei/config.conf | grep -v backend) > ~/.config/tokei/config.conf
+		echo "backend=$backend" >> ~/.config/tokei/config.conf
+		echo "Backend set as $backend"
+	else
+		backend=$(cat ~/.config/tokei/config.conf | grep backend | sed -e 's/=/\n/g' | grep -v backend)
+		echo "Backend set as $backend"
+fi
+
+
+# Make folder for wallpaper if missing
+if [ ! -d "~/.config/tokei/wallpaper/$backend" ]
+	then
+		mkdir -p ~/.config/tokei/wallpaper/$backend
+fi
+
 
 while :
 do
-	
-	# Get picture for current time
-	date=$(date +%H%M)
-	wget -O /tmp/tokei/wallpaper.jpg http://www.bijint.com/$backend/tokei_images/$date.jpg
 
-	# Set picture to the wallpaper for various desktops
-	mateconftool-2 -t str --set /desktop/mate/background/picture_filename  /tmp/tokei/wallpaper.jpg
-	mateconftool-2 -t str --set /desktop/mate/background/picture_options stretched
-	pcmanfm --set-wallpaper  /tmp/tokei/wallpaper.jpg --wallpaper-mode=scaled
-	gconftool-2 -t str --set /desktop/gnome/background/picture_filename  /tmp/tokei/wallpaper.jpg
-	gconftool-2 -t str --set /desktop/gnome/background/picture_options stretched
-	feh --bg-scale  /tmp/tokei/wallpaper.jpg
-	xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path -s  /tmp/tokei/wallpaper.jpg
+	date=$(date +%H%M)
+
+	# Get picture for current time if missing
+	if [ ! -f ~/.config/tokei/wallpaper/$backend/$date.jpg ]
+		then
+			wget -O ~/.config/tokei/wallpaper/$backend/$date.jpg http://www.bijint.com/$backend/tokei_images/$date.jpg
+	fi
+
+
+
+echo "desktop=$desktop"
+echo "pcmanfm --set-wallpaper ~/.config/tokei/wallpaper/$backend/$date.jpg --wallpaper-mode=scaled"
+# Set picture to the wallpaper for various desktops
+if [ "$desktop" == "lxdm" ]
+	then
+		pcmanfm --set-wallpaper ~/.config/tokei/wallpaper/$backend/$date.jpg --wallpaper-mode=scaled
+	else
+		if [ "$desktop" == "xfce" ]
+			then
+				xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path -s  ~/.config/tokei/wallpaper/$backend/$date.jpg
+			else
+				if [ "$desktop" == "mate" ]
+					then
+						mateconftool-2 -t str --set /desktop/mate/background/picture_filename  ~/.config/tokei/wallpaper/$backend/$date.jpg
+						mateconftool-2 -t str --set /desktop/mate/background/picture_options stretched
+					else
+						if [ "$desktop" == "gnome" ]
+							then
+								gconftool-2 -t str --set /desktop/gnome/background/picture_filename  ~/.config/tokei/wallpaper/$backend/$date.jpg
+								gconftool-2 -t str --set /desktop/gnome/background/picture_options stretched
+							else
+								if [ "$desktop" == "unity" ]
+									then
+										gsettings set org.gnome.desktop.background picture-uri "file:///tmp/tokei/wallpaper.jpg"
+									else
+										if [ "$desktop" == "feh" ]
+											then
+												feh --bg-scale  ~/.config/tokei/wallpaper/$backend/$date.jpg
+										fi
+								fi	
+						fi
+				fi
+		fi
+fi
+
 
 # This set here makes it sleep till the next minute. Thus, as soon as the minute changes, it starts changing the background.
 seconds=$(date +%S)
