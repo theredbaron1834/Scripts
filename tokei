@@ -3,7 +3,7 @@ setbackend=1
 setdesktop=1
 
 # Grab options
-optstr=b:d:hn:
+optstr=b:d:hn:o
 while getopts $optstr var
 do
 case $var in
@@ -11,10 +11,13 @@ b) backend=$OPTARG; setbackend=0;;
 d) desktop=$OPTARG; setdesktop=0;;
 h) echo "This is a simple script to grab wallpaper from Bijin-Tokei (http://www.bijint.com/) and set them every minute, as close to on the minute as I can get it. Bijin-Tokei is a wallpaper style that has people holding up the time. I don't read Japanese(which the site is in), or speak it for that matter. However, I assume that the backends are seperated by city/provence, ect, with most of them being just girls, and binan being just guys.
 
--h This help
 -b Sets the backend to use. You have your choice of okinawa, nagoya, jp, osaka, chiba, aomori, niigata, kyoto, kobe, hiroshima, nagasaki, saitama, fukuoka, tochigi, kagoshima, or binan. By default it uses jp.
--d Sets the desktop to use. You have your choice of lxdm, xfce, feh, mate, gnome, and unity, with lxdm being the default.";exit ;;
+-d Sets the desktop to use. You have your choice of lxdm, xfce, feh, mate, gnome, and unity, with lxdm being the default.
+-h This help.\
+-n Uses notify-send to send notifications on time change, how often depending on what number you pass, such as -n 5 will notify every 5 min.
+-o This will download all the files in your backend set to ~/.config/tokei/wallpaper/$backend. This allows you to use it offline. This does take some time though";exit ;;
 n) notifysend=yes; timeadded=0; notify=$OPTARG;;
+o) offline=yes
 esac
 done
 shift $(( $OPTIND - 1 )) 
@@ -49,13 +52,49 @@ if [ $setbackend = "0" ]
 		echo "Backend set as $backend"
 fi
 
-
 # Make folder for wallpaper if missing
 if [ ! -d "~/.config/tokei/wallpaper/$backend" ]
 	then
 		mkdir -p ~/.config/tokei/wallpaper/$backend
 fi
 
+# Check if all files should be downloaded.
+if [ $offline == yes ]			
+	then
+	minute=01
+	hour=00
+	wget -O ~/.config/tokei/wallpaper/$backend/0000.jpg http://www.bijint.com/$backend/tokei_images/0000.jpg
+	sleep 5
+
+	while :
+		do
+
+			if [ $minute -eq "59" ]
+				then
+					wget -O ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg http://www.bijint.com/$backend/tokei_images/$hour$minute.jpg
+					minute=00
+					let hour="10#"$hour+1
+					if [ $hour -lt "10" ]
+						then
+							hour="0$hour"
+					fi
+					if [ $hour -eq "24" ]			
+						then
+							echo "You have finished downloading all files in $backend. You can now use this program offline"
+							exit
+					fi
+				else
+					wget -O ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg http://www.bijint.com/$backend/tokei_images/$hour$minute.jpg
+					let minute="10#"$minute+1
+					echo "minute=$minute"
+					if [ $minute -lt "10" ]
+						then
+							minute="0$minute"
+					fi
+				sleep 5
+			fi
+	done
+fi
 
 while :
 do
