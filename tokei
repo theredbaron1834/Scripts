@@ -123,8 +123,7 @@ if [ "$desktop" == "lxdm" ]
 					else
 						if [ "$desktop" == "gnome" ]
 							then
-								gconftool-2 -t str --set /desktop/gnome/background/picture_filename  ~/.config/tokei/wallpaper/$backend/$date.jpg
-								gconftool-2 -t str --set /desktop/gnome/background/picture_options stretched
+								gsettings set org.gnome.desktop.background picture-uri "file:///tmp/tokei/wallpaper.jpg"
 							else
 								if [ "$desktop" == "unity" ]
 									then
