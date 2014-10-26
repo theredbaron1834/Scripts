@@ -59,11 +59,11 @@ if [ ! -d "~/.config/tokei/wallpaper/$backend" ]
 fi
 
 # Check if all files should be downloaded.
-if [ $offline == yes ]			
+if [ "$offline" == yes ]			
 	then
 	minute=01
 	hour=00
-	wget -O ~/.config/tokei/wallpaper/$backend/0000.jpg http://www.bijint.com/$backend/tokei_images/0000.jpg
+	curl http://www.bijint.com/$backend/tokei_images/0000.jpg -o ~/.config/tokei/wallpaper/$backend/0000.jpg
 	sleep 5
 
 	while :
@@ -71,7 +71,7 @@ if [ $offline == yes ]
 
 			if [ $minute -eq "59" ]
 				then
-					wget -O ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg http://www.bijint.com/$backend/tokei_images/$hour$minute.jpg
+					curl http://www.bijint.com/$backend/tokei_images/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg
 					minute=00
 					let hour="10#"$hour+1
 					if [ $hour -lt "10" ]
@@ -84,7 +84,7 @@ if [ $offline == yes ]
 							exit
 					fi
 				else
-					wget -O ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg http://www.bijint.com/$backend/tokei_images/$hour$minute.jpg
+					curl http://www.bijint.com/$backend/tokei_images/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg 
 					let minute="10#"$minute+1
 					echo "minute=$minute"
 					if [ $minute -lt "10" ]
@@ -104,13 +104,14 @@ do
 	# Get picture for current time if missing
 	if [ ! -f ~/.config/tokei/wallpaper/$backend/$date.jpg ]
 		then
-			wget -O ~/.config/tokei/wallpaper/$backend/$date.jpg http://www.bijint.com/$backend/tokei_images/$date.jpg
+			curl http://www.bijint.com/$backend/tokei_images/$date.jpg -o ~/.config/tokei/wallpaper/$backend/$date.jpg
 	fi
-
+echo "$desktop"
 # Set picture to the wallpaper for various desktops
 if [ "$desktop" == "lxdm" ]
 	then
 		pcmanfm --set-wallpaper ~/.config/tokei/wallpaper/$backend/$date.jpg --wallpaper-mode=scaled
+		echo done
 	else
 		if [ "$desktop" == "xfce" ]
 			then
@@ -123,11 +124,12 @@ if [ "$desktop" == "lxdm" ]
 					else
 						if [ "$desktop" == "gnome" ]
 							then
-								gsettings set org.gnome.desktop.background picture-uri "file:///tmp/tokei/wallpaper.jpg"
+								gsettings set org.gnome.desktop.background picture-uri "file:///home/$USER/.config/tokei/wallpaper/$backend/$date.jpg"
 							else
 								if [ "$desktop" == "unity" ]
 									then
-										gsettings set org.gnome.desktop.background picture-uri "file:///tmp/tokei/wallpaper.jpg"
+										gsettings set org.gnome.desktop.background picture-uri "file:///home/$USER/.config/tokei/wallpaper/$backend/$date.jpg"
+
 									else
 										if [ "$desktop" == "feh" ]
 											then
