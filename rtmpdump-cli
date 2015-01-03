@@ -1,0 +1,18 @@
+#!/bin/sh
+#To use this with Kodi, copy this to /usr/bin/rtmpdump-cli. Then add the following to your playercorefactory.xml in the player section.
+# <player name="RTMPDump" type="ExternalPlayer" video="true">
+# <filename>/usr/bin/rtmpdump-cli</filename>
+# <args>"{1}" &</args>
+# <forceontop>true</forceontop>
+# </player>
+rtmp=$(echo $1 | sed s'/ /\n/g' | head -n 1 )
+playpath=$(echo $1 | sed s'/ /\n/g' | grep playpath= | sed s'/playpath=/'/g)
+swfurl=$(echo $1 | sed s'/ /\n/g' | grep swfUrl= | sed 's/swfUrl=//g')
+pageurl=$(echo $1 | sed s'/ /\n/g' | grep pageUrl= |sed 's/pageUrl=//g')
+live=$(echo $1 | sed s'/ /\n/g' | grep live=1 | sed s'/live=1/--live/g')
+
+# If you have trouble, uncomment the following line, and send me the output. I might be able to get it working.
+#xterm -hold -e echo "rtmpdump -r "$rtmp" --playpath "$playpath" -s "$swfurl" -p "$pageurl" -o "$HOME"/Videos/"$playpath".flv $live /n 1=$1"
+
+
+xterm -hold -e rtmpdump -r "$rtmp" --playpath "$playpath" -s "$swfurl" -p "$pageurl" -o "$HOME"/Videos/"$playpath".flv $live
