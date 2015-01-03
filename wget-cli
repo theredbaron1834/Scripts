@@ -1,0 +1,11 @@
+#!/bin/sh
+#To use this with Kodi, copy this to /usr/bin/rtmpdump-cli. Then add the following to your playercorefactory.xml in the player section.
+# <player name="wGet" type="ExternalPlayer" video="true">
+# <filename>/usr/bin/wget-cli</filename>
+# <args>"{1}" &</args>
+# <forceontop>true</forceontop>
+# </player>
+
+# If you have trouble, uncomment the following line, and send me the output. I might be able to get it working.
+#xterm -hold -e echo "wget $1 -P /home/theredbaron/Videos/"
+xterm -hold -e wget $1 -P $HOME/Videos/ #If you don't want/need it to stay open, remove -hold and it will auto close.
