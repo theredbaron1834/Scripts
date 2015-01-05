@@ -8,4 +8,4 @@
 
 # If you have trouble, uncomment the following line, and send me the output. I might be able to get it working.
 #xterm -hold -e echo "wget $1 -P /home/theredbaron/Videos/"
-xterm -hold -e wget $1 -P $HOME/Videos/ #If you don't want/need it to stay open, remove -hold and it will auto close.
+xterm -hold -e wget $1 -O $HOME/Videos/$(date "+%j%H%M").mp4 #If you don't want/need it to stay open, remove -hold and it will auto close.
