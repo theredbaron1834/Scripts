@@ -3,96 +3,97 @@ setbackend=1
 setdesktop=1
 
 # Grab options
-optstr=b:d:hn:o
-while getopts $optstr var
+optstr=b:d:h:n:o
+while getopts $optstr var 
 do
-case $var in
-b) backend=$OPTARG; setbackend=0;;
-d) desktop=$OPTARG; setdesktop=0;;
-h) echo "This is a simple script to grab wallpaper from Bijin-Tokei (http://www.bijint.com/) and set them every minute, as close to on the minute as I can get it. Bijin-Tokei is a wallpaper style that has people holding up the time. I don't read Japanese(which the site is in), or speak it for that matter. However, I assume that the backends are seperated by city/provence, ect, with most of them being just girls, and binan being just guys.
+	case $var in
+	b) backend=$OPTARG; setbackend=0;;
+	d) desktop=$OPTARG; setdesktop=0;;
+	h) echo "This is a simple script to grab wallpaper from Bijin-Tokei (http://www.bijint.com/) and set them every minute, as close to on the minute as I can get it. Bijin-Tokei is a wallpaper style that has people holding up the time. I don't read Japanese(which the site is in), or speak it for that matter. However, I assume that the backends are seperated by city/provence, ect, with most of them being just girls, and binan being just guys.
 
 -b Sets the backend to use. You have your choice of okinawa, nagoya, jp, osaka, chiba, aomori, niigata, kyoto, kobe, hiroshima, nagasaki, saitama, fukuoka, tochigi, kagoshima, or binan. By default it uses jp.
 -d Sets the desktop to use. You have your choice of lxdm, xfce, feh, mate, gnome, and unity, with lxdm being the default.
--h This help.\
+-h This help.
 -n Uses notify-send to send notifications on time change, how often depending on what number you pass, such as -n 5 will notify every 5 min.
 -o This will download all the files in your backend set to ~/.config/tokei/wallpaper/$backend. This allows you to use it offline. This does take some time though";exit ;;
-n) notifysend=yes; timeadded=0; notify=$OPTARG;;
-o) offline=yes
-esac
+	n) notifysend=yes; timeadded=0; notify=$OPTARG;;
+	o) offline=yes;;
+	esac
 done
 shift $(( $OPTIND - 1 )) 
 
 # Check for config file/dir
 if [ ! -f ~/.config/tokei/config.conf ]
-	then
-		mkdir -p ~/.config/tokei/wallpaper/jp/
-    	echo "backend=jp" > ~/.config/tokei/config.conf
-		echo desktop=lxdm >> ~/.config/tokei/config.conf
+then
+	mkdir -p ~/.config/tokei/wallpaper/jp/
+    echo "backend=jp" > ~/.config/tokei/config.conf
+	echo "desktop=lxdm" >> ~/.config/tokei/config.conf
 fi
 
 # Set desktop
 if [ $setdesktop = "0" ]
-	then
-		echo $(cat ~/.config/tokei/config.conf | grep -v desktop) > ~/.config/tokei/config.conf
-		echo "desktop=$desktop" >> ~/.config/tokei/config.conf
-		echo "Desktop set as $desktop" 
-	else
-		desktop=$(cat ~/.config/tokei/config.conf | grep desktop | sed -e 's/=/\n/g' | grep -v desktop)
-		echo "Desktop set as $desktop"
+then
+	echo $(cat ~/.config/tokei/config.conf | grep -v desktop) > ~/.config/tokei/config.conf
+	echo "desktop=$desktop" >> ~/.config/tokei/config.conf
+	echo "Desktop set as $desktop" 
+else
+	desktop=$(cat ~/.config/tokei/config.conf | grep desktop | sed -e 's/=/\n/g' | grep -v desktop)
+	echo "Desktop set as $desktop"
 fi
 
 # Set backend
 if [ $setbackend = "0" ]
-	then
-		echo $(cat ~/.config/tokei/config.conf | grep -v backend) > ~/.config/tokei/config.conf
-		echo "backend=$backend" >> ~/.config/tokei/config.conf
-		echo "Backend set as $backend"
-	else
-		backend=$(cat ~/.config/tokei/config.conf | grep backend | sed -e 's/=/\n/g' | grep -v backend)
-		echo "Backend set as $backend"
+then
+	echo $(cat ~/.config/tokei/config.conf | grep -v backend) > ~/.config/tokei/config.conf
+	echo "backend=$backend" >> ~/.config/tokei/config.conf
+	echo "Backend set as $backend"
+else
+	backend=$(cat ~/.config/tokei/config.conf | grep backend | sed -e 's/=/\n/g' | grep -v backend)
+	echo "Backend set as $backend"
 fi
 
 # Make folder for wallpaper if missing
 if [ ! -d "~/.config/tokei/wallpaper/$backend" ]
-	then
-		mkdir -p ~/.config/tokei/wallpaper/$backend
+then
+	mkdir -p ~/.config/tokei/wallpaper/$backend
 fi
 
 # Check if all files should be downloaded.
 if [ "$offline" == yes ]			
-	then
+then
 	minute=01
 	hour=00
 	curl http://www.bijint.com/$backend/tokei_images/0000.jpg -o ~/.config/tokei/wallpaper/$backend/0000.jpg
 	sleep 5
 
-	while :
-		do
+	while : 
+	do
 
-			if [ $minute -eq "59" ]
-				then
-					curl http://www.bijint.com/$backend/tokei_images/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg
-					minute=00
-					let hour="10#"$hour+1
-					if [ $hour -lt "10" ]
-						then
-							hour="0$hour"
-					fi
-					if [ $hour -eq "24" ]			
-						then
-							echo "You have finished downloading all files in $backend. You can now use this program offline"
-							exit
-					fi
-				else
-					curl http://www.bijint.com/$backend/tokei_images/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg 
-					let minute="10#"$minute+1
-					echo "minute=$minute"
-					if [ $minute -lt "10" ]
-						then
-							minute="0$minute"
-					fi
-				sleep 5
+		if [ $minute -eq "59" ]
+		then
+			curl http://www.bijint.com/$backend/tokei_images/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg
+			minute=00
+			let hour="10#"$hour+1
+			if [ $hour -lt "10" ]
+			then
+				hour="0$hour"
 			fi
+			if [ $hour -eq "24" ]
+			then
+				echo "You have finished downloading all files in $backend. You can now use this program offline"
+				exit
+			fi
+		else
+			curl http://www.bijint.com/$backend/tokei_images/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg 
+			let minute="10#"$minute+1
+			echo "minute=$minute"
+			if [ $minute -lt "10" ]
+			then
+				minute="0$minute"
+			fi
+			sleep 5
+		fi
+	
 	done
 fi
 
@@ -103,57 +104,46 @@ do
 
 	# Get picture for current time if missing
 	if [ ! -f ~/.config/tokei/wallpaper/$backend/$date.jpg ]
-		then
-			curl http://www.bijint.com/$backend/tokei_images/$date.jpg -o ~/.config/tokei/wallpaper/$backend/$date.jpg
-	fi
-echo "$desktop"
-# Set picture to the wallpaper for various desktops
-if [ "$desktop" == "lxdm" ]
 	then
+		curl http://www.bijint.com/$backend/tokei_images/$date.jpg -o ~/.config/tokei/wallpaper/$backend/$date.jpg
+	fi
+
+	echo "$desktop"
+
+	# Set picture to the wallpaper for various desktops
+	case $desktop in
+	lxdm)
 		pcmanfm --set-wallpaper ~/.config/tokei/wallpaper/$backend/$date.jpg --wallpaper-mode=scaled
-		echo done
-	else
-		if [ "$desktop" == "xfce" ]
-			then
-				xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path -s  ~/.config/tokei/wallpaper/$backend/$date.jpg
-			else
-				if [ "$desktop" == "mate" ]
-					then
-						mateconftool-2 -t str --set /desktop/mate/background/picture_filename  ~/.config/tokei/wallpaper/$backend/$date.jpg
-						mateconftool-2 -t str --set /desktop/mate/background/picture_options stretched
-					else
-						if [ "$desktop" == "gnome" ]
-							then
-								gsettings set org.gnome.desktop.background picture-uri "file:///home/$USER/.config/tokei/wallpaper/$backend/$date.jpg"
-							else
-								if [ "$desktop" == "unity" ]
-									then
-										gsettings set org.gnome.desktop.background picture-uri "file:///home/$USER/.config/tokei/wallpaper/$backend/$date.jpg"
+		;;
+	xfce)
+		xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path -s  ~/.config/tokei/wallpaper/$backend/$date.jpg
+		;;
+	mate)
+		mateconftool-2 -t str --set /desktop/mate/background/picture_filename  ~/.config/tokei/wallpaper/$backend/$date.jpg
+		mateconftool-2 -t str --set /desktop/mate/background/picture_options stretched
+		;;
+	gnome|unity)				
+		gsettings set org.gnome.desktop.background picture-uri "file:///home/$USER/.config/tokei/wallpaper/$backend/$date.jpg"				
+		;;
+	feh)
+		feh --bg-scale  ~/.config/tokei/wallpaper/$backend/$date.jpg						
+		;;
+	esac
 
-									else
-										if [ "$desktop" == "feh" ]
-											then
-												feh --bg-scale  ~/.config/tokei/wallpaper/$backend/$date.jpg
-										fi
-								fi	
-						fi
-				fi
-		fi
-fi
-
-if [ "$notifysend" == "yes" ]
+	if [ "$notifysend" == "yes" ]
 	then
 		let timeadded=$timeadded+1
 		if [ $notify = "$timeadded" ]
-			then
-				notify-send -t 2500 -i ~/.config/tokei/wallpaper/$backend/$date.jpg "The current time is $(date +%H:%M)"
-				timeadded=0
+		then
+			notify-send -t 2500 -i ~/.config/tokei/wallpaper/$backend/$date.jpg "The current time is $(date +%H:%M)"
+			timeadded=0
 		fi
-fi
-# This set here makes it sleep till the next minute. Thus, as soon as the minute changes, it starts changing the background.
-seconds=$(date +%S)
-let "sleep = 60 - $seconds"
-echo "sleeping for $sleep seconds"
-sleep $sleep
+	fi
+
+	# This set here makes it sleep till the next minute. Thus, as soon as the minute changes, it starts changing the background.
+	seconds=$(date +%S)
+	let "sleep = 60 - $seconds"
+	echo "sleeping for $sleep seconds"
+	sleep $sleep
 
 done
