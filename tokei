@@ -26,7 +26,7 @@ shift $(( $OPTIND - 1 ))
 if [ ! -f ~/.config/tokei/config.conf ]
 then
 	mkdir -p ~/.config/tokei/wallpaper/jp/
-    echo "backend=jp" > ~/.config/tokei/config.conf
+	echo "backend=jp" > ~/.config/tokei/config.conf
 	echo "desktop=lxdm" >> ~/.config/tokei/config.conf
 fi
 
