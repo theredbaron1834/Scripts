@@ -1,0 +1,26 @@
+#!/bin/sh
+max=$(cat /sys/class/backlight/*/max_brightness)
+current=$(cat /sys/class/backlight/*/brightness)
+
+if [ "$1" == + ]
+	then
+		if [ $current == $max ]
+			then
+				notify-send -t 1000 "Brightness maxed"
+			else
+				let current=$current+1
+				echo $current | sudo tee /sys/class/backlight/*/brightness
+				notify-send -t 1000 "Brightness is now set at $current"
+		fi
+fi
+if [ "$1" == - ]
+	then
+		if [ $current == 0 ]
+			then
+				notify-send -t 1000 "Brightness already as low as it can. How are you seeing this"
+			else
+				let current=$current-1
+				echo $current | sudo tee /sys/class/backlight/*/brightness
+				notify-send -t 1000 "Brightness is now set at $current"
+		fi
+fi
