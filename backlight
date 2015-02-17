@@ -24,3 +24,5 @@ if [ "$1" == - ]
 				notify-send -t 1000 "Brightness is now set at $current"
 		fi
 fi
+
+echo "This is a simple script to change the backlight. Pass + to increase brightness and - to decrease brightness."
