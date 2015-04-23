@@ -1,0 +1,22 @@
+#!/bin/bash
+# A simple thumbnailer for APK's, which was made to work with PCmanFM/QT, though might work in others. It depends on aapt, but this isn't the eaisest to find if installed, so hardcoded. You will have to edit it to find yours, if it doesn't. It also requires you to create a new file in /usr/share/thumbnailers. Paste the following in it.
+
+#[Thumbnailer Entry]
+#TryExec=/usr/bin/apk-thumbnailer
+#Exec=/usr/bin/apk-thumbnailer %u %o
+#MimeType=application/vnd.android.package-archive;
+
+#Once done, copy this script to /usr/bin/apk-thumbnailer and it should work.
+
+
+
+
+
+
+file=$(echo "$1" | sed s'/file:\/\///g') # Clean up file name for aapt
+
+icon=$(/opt/android-sdk/build-tools/*/aapt d --values badging "$file" | grep application-icon- | sed s'/:/\n/g' | tail -n 1 | tr -d \') #Grab icon location
+mkdir /tmp/apkthumbnailer/
+cd /tmp/apkthumbnailer/
+unzip -o "$file" "$icon" # Extract icon
+convert -thumbnail 200 /tmp/apkthumbnailer/$icon "$2" # Make thumbnail
