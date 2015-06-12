@@ -63,7 +63,7 @@ if [ "$offline" == yes ]
 	then
 	minute=01
 	hour=00
-	curl http://www.bijint.com/$backend/tokei_images/0000.jpg -o ~/.config/tokei/wallpaper/$backend/0000.jpg
+	curl http://www.bijint.com/assets/pict/$backend/pc/0000.jpg -o ~/.config/tokei/wallpaper/$backend/0000.jpg
 	sleep 5
 
 	while :
@@ -71,7 +71,7 @@ if [ "$offline" == yes ]
 
 			if [ $minute -eq "59" ]
 				then
-					curl http://www.bijint.com/$backend/tokei_images/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg
+					curl http://www.bijint.com/assets/pict/$backend/pc/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg
 					minute=00
 					let hour="10#"$hour+1
 					if [ $hour -lt "10" ]
@@ -84,7 +84,7 @@ if [ "$offline" == yes ]
 							exit
 					fi
 				else
-					curl http://www.bijint.com/$backend/tokei_images/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg 
+					curl http://www.bijint.com/assets/pict/$backend/pc/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg 
 					let minute="10#"$minute+1
 					echo "minute=$minute"
 					if [ $minute -lt "10" ]
@@ -104,7 +104,8 @@ do
 	# Get picture for current time if missing
 	if [ ! -f ~/.config/tokei/wallpaper/$backend/$date.jpg ]
 		then
-			curl http://www.bijint.com/$backend/tokei_images/$date.jpg -o ~/.config/tokei/wallpaper/$backend/$date.jpg
+			curl http://www.bijint.com/assets/pict/$backend/pc/$date.jpg -o ~/.config/tokei/wallpaper/$backend/$date.jpg
+
 	fi
 echo "$desktop"
 # Set picture to the wallpaper for various desktops
