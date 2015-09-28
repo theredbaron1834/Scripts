@@ -1,5 +1,5 @@
 #!/bin/sh
-#To use this with Kodi, copy this to /usr/bin/rtmpdump-cli. Then add the following to your playercorefactory.xml in the player section.
+#To use this with Kodi, copy this to /usr/bin/wget-cli. Then add the following to your playercorefactory.xml in the player section.
 # <player name="wGet" type="ExternalPlayer" video="true">
 # <filename>/usr/bin/wget-cli</filename>
 # <args>"{1}" &</args>
