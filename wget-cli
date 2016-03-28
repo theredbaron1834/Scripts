@@ -7,5 +7,7 @@
 # </player>
 
 # If you have trouble, uncomment the following line, and send me the output. I might be able to get it working.
-#xterm -hold -e echo "wget $1 -P $HOME/Videos/"
-xterm -hold -e wget $1 -O $HOME/Videos/$(echo $1| sed s'/\./\n/g' | head -n 2 | tail -n 1)-$(date "+%j%H%M%S%N").mp4 #If you don't want/need it to stay open, remove -hold and it will auto close.
+#xterm -hold -e echo "wget $1 -P $HOME/Videos/ $2 $3 $4 $5"
+xterm -e wget $1 -O "$HOME/Videos/$(echo $1| sed s'/\./\n/g' | head -n 2 | tail -n 1 | tr -cd '[:alnum:] [:space:]')-$(date "+%j%H%M%S%N").mp4" #If you don't want/need it to stay open, remove -hold and it will auto close.
+
+notify-send "file downloaded"
