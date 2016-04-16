@@ -6,7 +6,7 @@
 #Exec=/usr/bin/apk-thumbnailer %u %o
 #MimeType=application/vnd.android.package-archive;
 
-#Once done, copy this script to /usr/bin/apk-thumbnailer and it should work.
+#Once done, copy this script to /usr/bin/apk-thumbnailer and it should work. You can also test it by running apk-thumbnailer /path/to/apk /path/to/extract/image
 
 
 
@@ -14,8 +14,19 @@
 
 
 file=$(echo "$1" | sed s'/file:\/\///g' | sed s'/%20/ /g' | sed s'/%5B/\[/g'| sed s'/%5D/\]/g') # Clean up thumbnailer for aapt
-
-icon=$(/opt/android-sdk/build-tools/*/aapt d --values badging "$file" | grep application-icon- | sed s'/:/\n/g' | tail -n 1 | tr -d \') #Grab icon location
+if [ "$(which aapt | echo $?)" != "0" ]
+	then
+		aapt=$(find /opt -name aapt | head -n 1)
+		if [ "$(echo $aapt | sed 's/\//\n/g' | tail -n 1)" != "aapt" ]
+			then
+				echo "Could not find a valid aapt, which is needed to run."
+				exit
+		fi
+			
+	else
+		aapt=$(which aapt)
+fi
+icon=$($aapt d --values badging "$file" | grep application-icon- | sed s'/:/\n/g' | tail -n 1 | tr -d \') #Grab icon location
 mkdir /tmp/apkthumbnailer/
 cd /tmp/apkthumbnailer/
 unzip -o "$file" "$icon" # Extract icon
