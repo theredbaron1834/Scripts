@@ -20,6 +20,11 @@ echo "this stuff is run via the function"
 {
 stuff
 
+# Disk imagestuff
+dd if=/dev/sdX | gzip > backup.img.gz # Create gziped dd image.
+cat backup.img.gz | gunzip | dd of=/dev/sdX # Restore gziped dd image
+
+
 # Echo stuff
 blue='\033[0;34m'
 red='\033[0;31m'
