@@ -25,4 +25,19 @@ if [ "$1" == - ]
 		fi
 fi
 
-echo "This is a simple script to change the backlight. Pass + to increase brightness and - to decrease brightness."
+if [ "$1" == high ]
+	then
+		echo $max | sudo tee /sys/class/backlight/*/brightness
+		notify-send -t 1000 "Brightness maxed"
+fi
+
+if [ "$1" == low ]
+	then
+        	low=$(echo $(( $max / 10 )))
+		echo $low | sudo tee /sys/class/backlight/*/brightness
+		notify-send -t 1000 "Brightness set to $low"
+fi
+
+
+
+echo "This is a simple script to change the backlight. Pass + to increase brightness by 1, - to decrease brightness by 1, high to max brightness, and low to put to 10%."
