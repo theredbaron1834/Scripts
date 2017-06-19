@@ -1,33 +1,50 @@
-#!/bin/bash
-# A simple thumbnailer for APK's, which was made to work with PCmanFM/QT, though might work in others. It depends on aapt, but this isn't the eaisest to find if installed, so hardcoded. You will have to edit it to find yours, if it doesn't. It also requires you to create a new file in /usr/share/thumbnailers. Paste the following in it.
-
-#[Thumbnailer Entry]
-#TryExec=/usr/bin/apk-thumbnailer
-#Exec=/usr/bin/apk-thumbnailer %u %o
-#MimeType=application/vnd.android.package-archive;
-
-#Once done, copy this script to /usr/bin/apk-thumbnailer and it should work. You can also test it by running apk-thumbnailer /path/to/apk /path/to/extract/image
-
-
-
-
-
-
-file=$(echo "$1" | sed s'/file:\/\///g' | sed s'/%20/ /g' | sed s'/%5B/\[/g'| sed s'/%5D/\]/g') # Clean up thumbnailer for aapt
-if [ "$(which aapt | echo $?)" != "0" ]
-	then
-		aapt=$(find /opt -name aapt | head -n 1)
-		if [ "$(echo $aapt | sed 's/\//\n/g' | tail -n 1)" != "aapt" ]
-			then
-				echo "Could not find a valid aapt, which is needed to run."
-				exit
-		fi
-			
-	else
-		aapt=$(which aapt)
+#!/bin/sh
+# Grab options
+optstr=h:u
+while getopts $optstr var
+do
+case $var in
+h) echo "This is an installer for Apk-Thumbnailer, a simple thumbnailer for many file managers. Run with root, and it will install a thumbnailer in /usr/share/thumbnailers, and the required script in /usr/bin/"
+exit
+;;
+u) 
+if [ "$EUID" -ne 0 ]
+  then echo "This needs root permissions, as it needs deletes things placed in /"
+  exit
 fi
-icon=$($aapt d --values badging "$file" | grep application-icon- | sed s'/:/\n/g' | tail -n 1 | tr -d \') #Grab icon location
+
+read -r -p "Are you sure you want to uninstall? [y/N] " response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
+    then
+        rm /usr/share/thumbnailers/apk-thumbnailer.thumbnailer
+        rm /usr/bin/apk-thumbnailer
+        exit
+    else
+        exit
+fi
+;;
+esac
+done
+shift $(( $OPTIND - 1 )) 
+
+
+
+if [ "$EUID" -ne 0 ]
+  then echo "This needs root permissions, as it needs to place things in /"
+  exit
+fi
+
+echo "[Thumbnailer Entry]
+TryExec=/usr/bin/apk-thumbnailer
+Exec=/usr/bin/apk-thumbnailer %u %o
+MimeType=application/vnd.android.package-archive" > /usr/share/thumbnailers/apk-thumbnailer.thumbnailer
+
+echo '#!/bin/bash
+file=$(echo "$1" | sed s'/file:////g' | sed s'/%20/ /g' | sed s'/%5B/[/g'| sed s'/%5D/]/g') # Clean up thumbnailer for aapt
+icon=$(/opt/android-sdk/build-tools/*/aapt d --values badging "$file" | grep application-icon- | sed s'/:/\n/g' | tail -n 1 | tr -d ) #Grab icon location
 mkdir /tmp/apkthumbnailer/
 cd /tmp/apkthumbnailer/
 unzip -o "$file" "$icon" # Extract icon
-convert -thumbnail 200 /tmp/apkthumbnailer/$icon "$2" # Make thumbnail
+convert -thumbnail 200 /tmp/apkthumbnailer/$icon "$2" # Make thumbnail' > /usr/bin/apk-thumbnailer
+
+exit
