@@ -12,7 +12,7 @@ d) desktop=$OPTARG; setdesktop=0;;
 h) echo "This is a simple script to grab wallpaper from Bijin-Tokei (http://www.bijint.com/) and set them every minute, as close to on the minute as I can get it. Bijin-Tokei is a wallpaper style that has people holding up the time. I don't read Japanese(which the site is in), or speak it for that matter. However, I assume that the backends are seperated by city/provence, ect, with most of them being just girls, and binan being just guys.
 
 -b Sets the backend to use. You have your choice of okinawa, nagoya, jp, osaka, chiba, aomori, niigata, kyoto, kobe, hiroshima, nagasaki, saitama, fukuoka, tochigi, kagoshima, or binan. By default it uses jp.
--d Sets the desktop to use. You have your choice of lxdm, xfce, feh, mate, gnome, and unity, with lxdm being the default.
+-d Sets the desktop to use. You have your choice of lxdm, lxqt, xfce, feh, mate, gnome, and unity, with lxdm being the default.
 -h This help.\
 -n Uses notify-send to send notifications on time change, how often depending on what number you pass, such as -n 5 will notify every 5 min.
 -o This will download all the files in your backend set to ~/.config/tokei/wallpaper/$backend. This allows you to use it offline. This does take some time though";exit ;;
@@ -109,38 +109,38 @@ do
 	fi
 echo "$desktop"
 # Set picture to the wallpaper for various desktops
-if [ "$desktop" == "lxdm" ]
-	then
-		pcmanfm --set-wallpaper ~/.config/tokei/wallpaper/$backend/$date.jpg --wallpaper-mode=scaled
-		echo done
-	else
-		if [ "$desktop" == "xfce" ]
-			then
-				xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path -s  ~/.config/tokei/wallpaper/$backend/$date.jpg
-			else
-				if [ "$desktop" == "mate" ]
-					then
-						mateconftool-2 -t str --set /desktop/mate/background/picture_filename  ~/.config/tokei/wallpaper/$backend/$date.jpg
-						mateconftool-2 -t str --set /desktop/mate/background/picture_options stretched
-					else
-						if [ "$desktop" == "gnome" ]
-							then
-								gsettings set org.gnome.desktop.background picture-uri "file:///home/$USER/.config/tokei/wallpaper/$backend/$date.jpg"
-							else
-								if [ "$desktop" == "unity" ]
-									then
-										gsettings set org.gnome.desktop.background picture-uri "file:///home/$USER/.config/tokei/wallpaper/$backend/$date.jpg"
 
-									else
-										if [ "$desktop" == "feh" ]
-											then
-												feh --bg-scale  ~/.config/tokei/wallpaper/$backend/$date.jpg
-										fi
-								fi	
-						fi
-				fi
-		fi
-fi
+# Function stuff
+function lxdm {
+pcmanfm --set-wallpaper ~/.config/tokei/wallpaper/$backend/$date.jpg --wallpaper-mode=scaled
+}
+
+function lxqt {
+pcmanfm-qt --set-wallpaper ~/.config/tokei/wallpaper/$backend/$date.jpg --wallpaper-mode=scaled
+}
+
+function xfce {
+xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path -s  ~/.config/tokei/wallpaper/$backend/$date.jpg
+}
+
+function mate {
+mateconftool-2 -t str --set /desktop/mate/background/picture_filename  ~/.config/tokei/wallpaper/$backend/$date.jpg
+mateconftool-2 -t str --set /desktop/mate/background/picture_options stretched
+}
+
+function gnome {
+gsettings set org.gnome.desktop.background picture-uri "file:///home/$USER/.config/tokei/wallpaper/$backend/$date.jpg"
+}
+
+function unity {
+gsettings set org.gnome.desktop.background picture-uri "file:///home/$USER/.config/tokei/wallpaper/$backend/$date.jpg"
+}
+
+function feh {
+feh --bg-scale  ~/.config/tokei/wallpaper/$backend/$date.jpg
+}
+
+$desktop
 
 if [ "$notifysend" == "yes" ]
 	then
