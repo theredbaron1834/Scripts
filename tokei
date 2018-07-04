@@ -15,7 +15,7 @@ h) echo "This is a simple script to grab wallpaper from Bijin-Tokei (http://www.
 -d Sets the desktop to use. You have your choice of lxdm, lxqt, xfce, feh, mate, gnome, and unity, with lxdm being the default.
 -h This help.\
 -n Uses notify-send to send notifications on time change, how often depending on what number you pass, such as -n 5 will notify every 5 min.
--o This will download all the files in your backend set to ~/.config/tokei/wallpaper/$backend. This allows you to use it offline. This does take some time though";exit ;;
+-o This will download all the files in your backend set to ~/.config/tokei/wallpaper/$backend. This allows you to use it offline, as well as helps deal with the poor connection (depending on your location). If you have trouble, and are getting blank images, try this This does take some time though";exit ;;
 n) notifysend=yes; timeadded=0; notify=$OPTARG;;
 o) offline=yes
 esac
@@ -63,7 +63,7 @@ if [ "$offline" == yes ]
 	then
 	minute=01
 	hour=00
-	curl http://www.bijint.com/assets/pict/$backend/pc/0000.jpg -o ~/.config/tokei/wallpaper/$backend/0000.jpg
+	curl --connect-timeout 20 --retry 5 http://www.bijint.com/assets/pict/$backend/pc/0000.jpg -o ~/.config/tokei/wallpaper/$backend/0000.jpg
 	sleep 5
 
 	while :
@@ -71,7 +71,7 @@ if [ "$offline" == yes ]
 
 			if [ $minute -eq "59" ]
 				then
-					curl http://www.bijint.com/assets/pict/$backend/pc/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg
+					curl --connect-timeout 20 --retry 5 http://www.bijint.com/assets/pict/$backend/pc/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg
 					minute=00
 					let hour="10#"$hour+1
 					if [ $hour -lt "10" ]
@@ -84,7 +84,7 @@ if [ "$offline" == yes ]
 							exit
 					fi
 				else
-					curl http://www.bijint.com/assets/pict/$backend/pc/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg 
+					curl --connect-timeout 20 --retry 5 http://www.bijint.com/assets/pict/$backend/pc/$hour$minute.jpg -o ~/.config/tokei/wallpaper/$backend/$hour$minute.jpg 
 					let minute="10#"$minute+1
 					echo "minute=$minute"
 					if [ $minute -lt "10" ]
