@@ -9,6 +9,6 @@ file=$(echo "$1" | sed s'/file:\/\///g' | sed s'/%20/ /g' | sed s'/%5B/\[/g'| se
 icon=$(/opt/android-sdk/build-tools/*/aapt d --values badging "$file" | grep application-icon- | sed s'/:/\n/g' | tail -n 1 | tr -d \') #Grab icon location
 mkdir /tmp/apkthumbnailer/
 cd /tmp/apkthumbnailer/
-unzip -o "$file" "$icon # Extract icon
+unzip -o "$file" "$icon" # Extract icon
 convert -thumbnail 200 /tmp/apkthumbnailer/"$icon" "$2" # Make thumbnail
 exit
