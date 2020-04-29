@@ -1,50 +1,16 @@
 #!/bin/sh
-# Grab options
-optstr=h:u
-while getopts $optstr var
-do
-case $var in
-h) echo "This is an installer for Apk-Thumbnailer, a simple thumbnailer for many file managers. Run with root, and it will install a thumbnailer in /usr/share/thumbnailers, and the required script in /usr/bin/"
-exit
-;;
-u) 
-if [ "$EUID" -ne 0 ]
-  then echo "This needs root permissions, as it needs deletes things placed in /"
-  exit
-fi
+#This needs a thumnailer entry placed in /usr/share/thumbnailers/
+#EXAMPLE ENTRY:
+#[Thumbnailer Entry]
+#TryExec=/usr/bin/apk-thumbnailer
+#Exec=/usr/bin/apk-thumbnailer %u %o
+#MimeType=application/vnd.android.package-archive" 
 
-read -r -p "Are you sure you want to uninstall? [y/N] " response
-if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
-    then
-        rm /usr/share/thumbnailers/apk-thumbnailer.thumbnailer
-        rm /usr/bin/apk-thumbnailer
-        exit
-    else
-        exit
-fi
-;;
-esac
-done
-shift $(( $OPTIND - 1 )) 
-
-
-
-if [ "$EUID" -ne 0 ]
-  then echo "This needs root permissions, as it needs to place things in /"
-  exit
-fi
-
-echo "[Thumbnailer Entry]
-TryExec=/usr/bin/apk-thumbnailer
-Exec=/usr/bin/apk-thumbnailer %u %o
-MimeType=application/vnd.android.package-archive" > /usr/share/thumbnailers/apk-thumbnailer.thumbnailer
-
-echo '#!/bin/bash
+#!/bin/bash
 file=$(echo "$1" | sed s'/file:\/\///g' | sed s'/%20/ /g' | sed s'/%5B/\[/g'| sed s'/%5D/\]/g') # Clean up thumbnailer for aapt
 icon=$(/opt/android-sdk/build-tools/*/aapt d --values badging "$file" | grep application-icon- | sed s'/:/\n/g' | tail -n 1 | tr -d \') #Grab icon location
 mkdir /tmp/apkthumbnailer/
 cd /tmp/apkthumbnailer/
-unzip -o "$file" "$icon" # Extract icon
-convert -thumbnail 200 /tmp/apkthumbnailer/$icon $2 # Make thumbnail' > /usr/bin/apk-thumbnailer
-
+unzip -o "$file" "$icon # Extract icon
+convert -thumbnail 200 /tmp/apkthumbnailer/"$icon" "$2" # Make thumbnail
 exit
