@@ -5,8 +5,6 @@
 #TryExec=/usr/bin/apk-thumbnailer
 #Exec=/usr/bin/apk-thumbnailer %u %o
 #MimeType=application/vnd.android.package-archive" 
-
-#!/bin/bash
 file=$(echo "$1" | sed s'/file:\/\///g' | sed s'/%20/ /g' | sed s'/%5B/\[/g'| sed s'/%5D/\]/g') # Clean up thumbnailer for aapt
 icon=$(/opt/android-sdk/build-tools/*/aapt d --values badging "$file" | grep application-icon- | sed s'/:/\n/g' | tail -n 1 | tr -d \') #Grab icon location
 mkdir /tmp/apkthumbnailer/
